@@ -1,8 +1,8 @@
-import { BookOpenCheck, Layers, ListChecks, RotateCcw, Search, X } from 'lucide-react';
-import { QUESTIONNAIRE_META } from '../../data/questionnaireData';
-import type { ViewMode } from '../../types/questionnaire';
+import { BookOpenCheck, ClipboardList, Layers, ListChecks, RotateCcw, Search, X } from 'lucide-react';
+import type { QuestionnaireMeta, ViewMode } from '../../types/questionnaire';
 
 interface HeaderProps {
+  meta: QuestionnaireMeta;
   viewMode: ViewMode;
   onChangeViewMode: (mode: ViewMode) => void;
   searchQuery: string;
@@ -13,6 +13,7 @@ interface HeaderProps {
 }
 
 export function Header({
+  meta,
   viewMode,
   onChangeViewMode,
   searchQuery,
@@ -33,12 +34,10 @@ export function Header({
               <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-blue-800 ring-1 ring-blue-700/15">
                 UPAO · SISTEMAS
               </span>
-              <span className="truncate text-xs font-medium text-slate-500">
-                {QUESTIONNAIRE_META.school}
-              </span>
+              <span className="truncate text-xs font-medium text-slate-500">{meta.school}</span>
             </div>
             <h1 className="mt-0.5 truncate text-base font-bold tracking-tight text-slate-900 sm:text-lg">
-              {QUESTIONNAIRE_META.title}
+              {meta.title}
             </h1>
           </div>
         </div>
@@ -96,9 +95,21 @@ export function Header({
               <ListChecks className="h-3.5 w-3.5" />
               Ver todas ({totalCount})
             </button>
+            <button
+              type="button"
+              onClick={() => onChangeViewMode('results')}
+              className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                viewMode === 'results'
+                  ? 'bg-white text-blue-900 shadow-xs ring-1 ring-slate-200/80'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <ClipboardList className="h-3.5 w-3.5" />
+              Resultados BD
+            </button>
           </div>
 
-          {answeredCount > 0 && (
+          {answeredCount > 0 && viewMode !== 'results' && (
             <button
               type="button"
               onClick={onResetAll}
