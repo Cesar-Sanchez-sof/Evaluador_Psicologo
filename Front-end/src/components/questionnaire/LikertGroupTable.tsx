@@ -1,19 +1,29 @@
-import { LIKERT_SCALE } from '../../data/questionnaireData';
-import type { LikertGroupBlock, LikertValue, StudentAnswers } from '../../types/questionnaire';
+import type {
+  LikertGroupBlock,
+  LikertScaleItem,
+  LikertValue,
+  StudentAnswers,
+} from '../../types/questionnaire';
 
 interface LikertGroupTableProps {
   group: LikertGroupBlock;
+  likertScale: LikertScaleItem[];
   answers: StudentAnswers;
   onSelect: (questionId: string, value: LikertValue) => void;
 }
 
-export function LikertGroupTable({ group, answers, onSelect }: LikertGroupTableProps) {
+export function LikertGroupTable({
+  group,
+  likertScale,
+  answers,
+  onSelect,
+}: LikertGroupTableProps) {
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs">
       <div className="border-b border-slate-100 bg-slate-50/80 px-5 py-3.5 sm:px-6">
         <p className="text-sm font-semibold text-slate-800">{group.prompt}</p>
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">
-          {LIKERT_SCALE.map((scale) => (
+          {likertScale.map((scale) => (
             <span key={scale.value}>
               <strong className="font-bold text-blue-900">{scale.value}</strong> = {scale.label}
             </span>
@@ -21,14 +31,13 @@ export function LikertGroupTable({ group, answers, onSelect }: LikertGroupTableP
         </div>
       </div>
 
-      {/* Cabecera de columnas en escritorio */}
       <div className="hidden border-b border-slate-200 bg-blue-950 px-6 py-2.5 text-xs font-semibold text-white md:grid md:grid-cols-[1fr_280px] md:items-center md:gap-4">
         <div className="flex items-center gap-3">
           <span className="w-14">N.°</span>
           <span>Afirmación / Enunciado</span>
         </div>
         <div className="grid grid-cols-5 text-center">
-          {LIKERT_SCALE.map((scale) => (
+          {likertScale.map((scale) => (
             <span key={scale.value} title={scale.label}>
               {scale.value}
             </span>
@@ -70,7 +79,7 @@ export function LikertGroupTable({ group, answers, onSelect }: LikertGroupTableP
                       role="radiogroup"
                       aria-label={`${item.code}: ${item.statement}`}
                     >
-                      {LIKERT_SCALE.map((scale) => {
+                      {likertScale.map((scale) => {
                         const isSelected = currentValue === scale.value;
                         return (
                           <button

@@ -192,15 +192,16 @@ CREATE TABLE resultados_evaluacion (
 
 -- Desglose persistente de las 10 áreas vocacionales por evaluación (Tabla Paso 8 / Hoja pág. 9)
 CREATE TABLE resultados_detalle_area (
-    evaluacion_id   BIGINT NOT NULL REFERENCES evaluaciones(id) ON DELETE CASCADE,
-    area_codigo     CHAR(2) NOT NULL REFERENCES areas_vocacionales(codigo),
-    ptos_s1         INTEGER NOT NULL DEFAULT 0,
-    ptos_s3         INTEGER NOT NULL DEFAULT 0,
-    ptos_s4         INTEGER NOT NULL DEFAULT 0,
-    ptos_s5         INTEGER NOT NULL DEFAULT 0,
-    bonus_s6        INTEGER NOT NULL DEFAULT 0,
-    total_area      INTEGER NOT NULL DEFAULT 0,
-    orden_prioridad SMALLINT NOT NULL,
+    evaluacion_id          BIGINT NOT NULL REFERENCES evaluaciones(id) ON DELETE CASCADE,
+    area_codigo            CHAR(2) NOT NULL REFERENCES areas_vocacionales(codigo),
+    ptos_s1                INTEGER NOT NULL DEFAULT 0,
+    ptos_s3                INTEGER NOT NULL DEFAULT 0,
+    ptos_s4                INTEGER NOT NULL DEFAULT 0,
+    ptos_s5                INTEGER NOT NULL DEFAULT 0,
+    bonus_s6               INTEGER NOT NULL DEFAULT 0,
+    total_area             INTEGER NOT NULL DEFAULT 0,
+    porcentaje_orientacion NUMERIC(5,2) NOT NULL DEFAULT 0,
+    orden_prioridad        SMALLINT NOT NULL,
     PRIMARY KEY (evaluacion_id, area_codigo)
 );
 
@@ -692,6 +693,14 @@ SELECT
     ptos_s5,
     bonus_s6,
     total_area,
+    COALESCE(
+        ROUND(
+            GREATEST(total_area, 0) * 100.0
+            / NULLIF(SUM(GREATEST(total_area, 0)) OVER (PARTITION BY evaluacion_id), 0),
+            2
+        ),
+        0.00
+    ) AS porcentaje_orientacion,
     ROW_NUMBER() OVER (
         PARTITION BY evaluacion_id
         ORDER BY
@@ -721,10 +730,12 @@ SELECT
     p1.area_codigo AS primera_opcion_codigo,
     p1.area_nombre AS primera_opcion_nombre,
     p1.total_area  AS primera_opcion_puntaje,
+    p1.porcentaje_orientacion AS primera_opcion_porcentaje,
     av1.carreras_afines AS carreras_recomendadas_primera_opcion,
     p2.area_codigo AS segunda_opcion_codigo,
     p2.area_nombre AS segunda_opcion_nombre,
     p2.total_area  AS segunda_opcion_puntaje,
+    p2.porcentaje_orientacion AS segunda_opcion_porcentaje,
     (p1.total_area = p2.total_area AND p1.ptos_s4 = p2.ptos_s4) AS requiere_revision_empate_dual,
     s2.grupo_a_autoeficacia,
     s2.grupo_b_resiliencia,
@@ -732,6 +743,15 @@ SELECT
     s2.total_s2,
     s2.nivel_psicometrico,
     s2.interpretacion_s2,
+    s3.puntaje_3a_logico_matematico,
+    s3.puntaje_3b_comprension_verbal,
+    s3.puntaje_3c_espacial_visual,
+    s4.puntaje_r_realista,
+    s4.puntaje_i_investigador,
+    s4.puntaje_a_artistico,
+    s4.puntaje_s_social,
+    s4.puntaje_e_emprendedor,
+    s4.puntaje_c_convencional,
     ia.p1_7_dedicacion,
     ia.p1_7_interpretacion,
     ia.p5_4_opcion,
@@ -757,6 +777,10 @@ LEFT JOIN areas_vocacionales av1
        ON av1.codigo = p1.area_codigo
 LEFT JOIN vw_resumen_seccion2_psicometrico s2
        ON s2.evaluacion_id = ev.id
+LEFT JOIN vw_puntajes_cognitivos_s3 s3
+       ON s3.evaluacion_id = ev.id
+LEFT JOIN vw_puntajes_riasec_s4 s4
+       ON s4.evaluacion_id = ev.id
 LEFT JOIN vw_indicadores_apoyo ia
        ON ia.evaluacion_id = ev.id
 LEFT JOIN veredictos_psicologo vp
@@ -786,22 +810,23 @@ BEGIN
         RAISE EXCEPTION 'La evaluación % no existe.', p_evaluacion_id;
     END IF;
 
-    -- 1. Persistir desglose de puntajes por las 10 áreas vocacionales
+    -- 1. Persistir desglose de puntajes y porcentaje de orientación por las 10 áreas vocacionales
     INSERT INTO resultados_detalle_area (
-        evaluacion_id, area_codigo, ptos_s1, ptos_s3, ptos_s4, ptos_s5, bonus_s6, total_area, orden_prioridad
+        evaluacion_id, area_codigo, ptos_s1, ptos_s3, ptos_s4, ptos_s5, bonus_s6, total_area, porcentaje_orientacion, orden_prioridad
     )
     SELECT
-        c.evaluacion_id, c.area_codigo, c.ptos_s1, c.ptos_s3, c.ptos_s4, c.ptos_s5, c.bonus_s6, c.total_area, c.orden_prioridad
+        c.evaluacion_id, c.area_codigo, c.ptos_s1, c.ptos_s3, c.ptos_s4, c.ptos_s5, c.bonus_s6, c.total_area, c.porcentaje_orientacion, c.orden_prioridad
     FROM vw_consolidado_puntajes_area c
     WHERE c.evaluacion_id = p_evaluacion_id
     ON CONFLICT (evaluacion_id, area_codigo) DO UPDATE SET
-        ptos_s1         = EXCLUDED.ptos_s1,
-        ptos_s3         = EXCLUDED.ptos_s3,
-        ptos_s4         = EXCLUDED.ptos_s4,
-        ptos_s5         = EXCLUDED.ptos_s5,
-        bonus_s6        = EXCLUDED.bonus_s6,
-        total_area      = EXCLUDED.total_area,
-        orden_prioridad = EXCLUDED.orden_prioridad;
+        ptos_s1                = EXCLUDED.ptos_s1,
+        ptos_s3                = EXCLUDED.ptos_s3,
+        ptos_s4                = EXCLUDED.ptos_s4,
+        ptos_s5                = EXCLUDED.ptos_s5,
+        bonus_s6               = EXCLUDED.bonus_s6,
+        total_area             = EXCLUDED.total_area,
+        porcentaje_orientacion = EXCLUDED.porcentaje_orientacion,
+        orden_prioridad        = EXCLUDED.orden_prioridad;
 
     -- 2. Persistir resumen integral de la evaluación
     INSERT INTO resultados_evaluacion (
@@ -887,15 +912,11 @@ END;
 $$;
 
 
--- Sincronizar secuencias tras los INSERT con ID explícito de los casos de prueba
-SELECT setval('estudiantes_id_seq', COALESCE((SELECT MAX(id) FROM estudiantes), 1));
-SELECT setval('evaluaciones_id_seq', COALESCE((SELECT MAX(id) FROM evaluaciones), 1));
-
 COMMIT;
 
 -- =============================================================================
 -- CONSULTAS RÁPIDAS DE REVISIÓN (DESCOMENTAR PARA INSPECCIONAR RESULTADOS)
 -- =============================================================================
 -- SELECT * FROM resultados_evaluacion ORDER BY evaluacion_id;
--- SELECT * FROM resultados_detalle_area WHERE evaluacion_id = 2 ORDER BY orden_prioridad;
+-- SELECT * FROM resultados_detalle_area ORDER BY evaluacion_id, orden_prioridad;
 -- SELECT * FROM vw_hoja_correccion_final ORDER BY evaluacion_id;

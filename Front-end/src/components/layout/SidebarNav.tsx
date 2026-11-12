@@ -1,14 +1,16 @@
 import { CheckCircle2, ClipboardCheck, Home, ShieldAlert } from 'lucide-react';
-import { getSectionQuestionIds, QUESTIONNAIRE_SECTIONS } from '../../data/questionnaireData';
 import {
+  getSectionQuestionIds,
   isQuestionAnswered,
   type ActiveStepId,
+  type QuestionnaireSection,
   type StudentAnswers,
   type ViewMode,
 } from '../../types/questionnaire';
 import { ProgressBar } from '../common/ProgressBar';
 
 interface SidebarNavProps {
+  sections: QuestionnaireSection[];
   activeStep: ActiveStepId;
   viewMode: ViewMode;
   onSelectStep: (step: ActiveStepId) => void;
@@ -18,6 +20,7 @@ interface SidebarNavProps {
 }
 
 export function SidebarNav({
+  sections,
   activeStep,
   viewMode,
   onSelectStep,
@@ -41,7 +44,7 @@ export function SidebarNav({
             <ProgressBar
               current={answeredCount}
               total={totalQuestions}
-              label="Progreso vista previa"
+              label="Progreso del cuestionario"
             />
           </div>
         </div>
@@ -65,7 +68,7 @@ export function SidebarNav({
 
           <div className="my-1.5 border-t border-slate-100" />
 
-          {QUESTIONNAIRE_SECTIONS.map((section) => {
+          {sections.map((section) => {
             const ids = getSectionQuestionIds(section);
             const sectionAnswered = ids.filter((id) => isQuestionAnswered(answers[id])).length;
             const isComplete = sectionAnswered === ids.length && ids.length > 0;

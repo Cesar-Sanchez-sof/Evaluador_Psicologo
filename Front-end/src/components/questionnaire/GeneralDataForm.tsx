@@ -1,13 +1,19 @@
 import { UserRound } from 'lucide-react';
-import { AGE_OPTIONS, SEX_OPTIONS } from '../../data/questionnaireData';
 import type { GeneralDataState } from '../../types/questionnaire';
 
 interface GeneralDataFormProps {
   data: GeneralDataState;
+  ageOptions: string[];
+  sexOptions: string[];
   onChange: (updated: GeneralDataState) => void;
 }
 
-export function GeneralDataForm({ data, onChange }: GeneralDataFormProps) {
+export function GeneralDataForm({
+  data,
+  ageOptions,
+  sexOptions,
+  onChange,
+}: GeneralDataFormProps) {
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs">
       <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50/80 px-6 py-4">
@@ -21,7 +27,6 @@ export function GeneralDataForm({ data, onChange }: GeneralDataFormProps) {
       </div>
 
       <div className="grid grid-cols-1 gap-6 p-6 md:grid-cols-2">
-        {/* a. Nombres y apellidos */}
         <div className="md:col-span-2">
           <label
             htmlFor="student-fullname"
@@ -39,13 +44,12 @@ export function GeneralDataForm({ data, onChange }: GeneralDataFormProps) {
           />
         </div>
 
-        {/* b. Edad */}
         <div>
           <span className="block text-sm font-semibold text-slate-800">
             b. Edad (en años cumplidos):
           </span>
           <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {AGE_OPTIONS.map((age) => {
+            {ageOptions.map((age) => {
               const selected = data.ageOption === age;
               return (
                 <button
@@ -74,12 +78,11 @@ export function GeneralDataForm({ data, onChange }: GeneralDataFormProps) {
           )}
         </div>
 
-        {/* c. Sexo y d. Sección */}
         <div className="space-y-5">
           <div>
             <span className="block text-sm font-semibold text-slate-800">c. Sexo:</span>
             <div className="mt-2.5 grid grid-cols-2 gap-2.5">
-              {SEX_OPTIONS.map((sex) => {
+              {sexOptions.map((sex) => {
                 const selected = data.sex === sex;
                 return (
                   <button

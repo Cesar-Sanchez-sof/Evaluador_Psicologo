@@ -1,8 +1,9 @@
 import { Info } from 'lucide-react';
-import { getSectionQuestionIds } from '../../data/questionnaireData';
 import {
+  getSectionQuestionIds,
   isQuestionAnswered,
   type LikertGroupBlock,
+  type LikertScaleItem,
   type LikertValue,
   type QuestionnaireSection,
   type SectionBlock,
@@ -13,6 +14,7 @@ import { SingleChoiceQuestion } from './SingleChoiceQuestion';
 
 interface SectionViewProps {
   section: QuestionnaireSection;
+  likertScale: LikertScaleItem[];
   answers: StudentAnswers;
   onSelectAnswer: (questionId: string, value: string | string[] | LikertValue) => void;
   searchQuery?: string;
@@ -55,6 +57,7 @@ function filterBlock(block: SectionBlock, normalizedQuery: string): SectionBlock
 
 export function SectionView({
   section,
+  likertScale,
   answers,
   onSelectAnswer,
   searchQuery = '',
@@ -110,6 +113,7 @@ export function SectionView({
             <LikertGroupTable
               key={block.id}
               group={block}
+              likertScale={likertScale}
               answers={answers}
               onSelect={(qId, value) => onSelectAnswer(qId, value)}
             />
