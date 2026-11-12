@@ -2,6 +2,7 @@ import cors from 'cors';
 import express from 'express';
 import { env } from './config/env.js';
 import { errorHandler } from './middlewares/errorHandler.js';
+import { exportRouter } from './routes/export.routes.js';
 import { apiRouter } from './routes/index.js';
 
 export function createApp() {
@@ -17,6 +18,7 @@ export function createApp() {
 
   app.use(express.json({ limit: '1mb' }));
 
+  app.use('/api/export', exportRouter);
   app.use('/api', apiRouter);
 
   app.use((_req, res) => {

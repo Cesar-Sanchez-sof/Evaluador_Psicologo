@@ -1,6 +1,10 @@
-import { RefreshCw } from 'lucide-react';
+import { Download, RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { fetchEvaluationDetail, fetchEvaluations } from '../../services/api';
+import {
+  buildExportUrl,
+  fetchEvaluationDetail,
+  fetchEvaluations,
+} from '../../services/api';
 import type { EvaluationDetail, EvaluationListItem } from '../../types/questionnaire';
 import { mapDetailToScoringDisplay, ScoringSummaryCard } from './ScoringSummaryCard';
 
@@ -54,6 +58,10 @@ export function EvaluationResultsPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialSelectedEvaluationId]);
 
+  const handleExport = (format: 'csv' | 'json') => {
+    window.open(buildExportUrl(format), '_blank', 'noopener,noreferrer');
+  };
+
   const hoja = selectedDetail?.hojaCorreccion;
 
   return (
@@ -75,15 +83,35 @@ export function EvaluationResultsPanel({
               porcentaje de orientación vocacional almacenados
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => void loadList(hoja?.evaluacion_id)}
-            disabled={loadingList}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${loadingList ? 'animate-spin' : ''}`} />
-            Actualizar
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleExport('csv')}
+              title="Descargar dataset plano para Pandas (una fila por estudiante)"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Exportar CSV
+            </button>
+            <button
+              type="button"
+              onClick={() => handleExport('json')}
+              title="Descargar el mismo dataset en formato JSON"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-800 hover:bg-indigo-100"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Exportar JSON
+            </button>
+            <button
+              type="button"
+              onClick={() => void loadList(hoja?.evaluacion_id)}
+              disabled={loadingList}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${loadingList ? 'animate-spin' : ''}`} />
+              Actualizar
+            </button>
+          </div>
         </div>
 
         <div className="divide-y divide-slate-100">
