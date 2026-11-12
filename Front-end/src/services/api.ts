@@ -293,3 +293,13 @@ export async function savePsychologistVerdict(
     }),
   });
 }
+
+export type ExportFormat = 'csv' | 'json';
+
+/**
+ * URL directa de descarga del dataset (Back-end /api/export/:format).
+ * Se usa con `window.open` para que el navegador gestione la descarga.
+ */
+export function buildExportUrl(format: ExportFormat): string {
+  return `${API_BASE_URL}/export/${format}`;
+}

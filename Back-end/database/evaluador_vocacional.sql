@@ -805,6 +805,7 @@ RETURNS TABLE (
 )
 LANGUAGE plpgsql
 AS $$
+#variable_conflict use_column
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM evaluaciones e WHERE e.id = p_evaluacion_id) THEN
         RAISE EXCEPTION 'La evaluación % no existe.', p_evaluacion_id;
