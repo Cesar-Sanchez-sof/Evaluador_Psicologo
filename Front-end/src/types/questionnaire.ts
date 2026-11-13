@@ -1,3 +1,5 @@
+import type { OfficialGrades } from './grades';
+
 export type LikertValue = 1 | 2 | 3 | 4 | 5;
 
 export interface LikertScaleItem {
@@ -108,6 +110,7 @@ export type StudentAnswers = Record<string, string | string[] | LikertValue>;
 
 export type ActiveStepId =
   | 'welcome'
+  | 'grades'
   | 'section-1'
   | 'section-2'
   | 'section-3'
@@ -220,6 +223,7 @@ export interface EvaluationResponseRow {
 
 export interface EvaluationDetail {
   hojaCorreccion: HojaCorreccionFinal;
+  notasOficiales: OfficialGrades | null;
   detalleAreas: AreaScoreDetailRow[];
   respuestas: EvaluationResponseRow[];
   veredictoPsicologo: {

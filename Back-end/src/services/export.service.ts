@@ -6,6 +6,7 @@ import { query } from '../config/database.js';
  * Genera una fila "plana" por estudiante (última evaluación evaluada/revisada),
  * lista para `pandas.read_csv()`:
  *   - Datos generales
+ *   - Notas académicas oficiales (11 cursos)
  *   - Respuestas crudas P1.1 .. P6.6 (las de opción múltiple se unen por comas)
  *   - Puntajes consolidados por sección + perfil psicométrico
  *   - Puntaje total de cada una de las 10 áreas vocacionales
@@ -28,6 +29,25 @@ const VOCATIONAL_AREA_CODES = [
 const S3_CODES = Array.from({ length: 9 }, (_, i) => `P3.${i + 1}`);
 const S4_CODES = Array.from({ length: 18 }, (_, i) => `P4.${i + 1}`);
 
+/**
+ * Notas oficiales por curso (mismo orden del catálogo del Front-end).
+ * Se exportan una vez por estudiante y se mantienen aunque el estudiante
+ * vuelva a responder el cuestionario.
+ */
+const OFFICIAL_GRADE_COLUMNS = [
+  'nota_dpcc',
+  'nota_ciencias_sociales',
+  'nota_educacion_religiosa',
+  'nota_educacion_trabajo',
+  'nota_educacion_fisica',
+  'nota_comunicacion',
+  'nota_arte_cultura',
+  'nota_castellano_segunda_lengua',
+  'nota_ingles',
+  'nota_matematica',
+  'nota_ciencia_tecnologia',
+] as const;
+
 export type ExportRow = Record<string, string | number | null>;
 
 interface ExportQueryRow {
@@ -42,6 +62,7 @@ interface ExportQueryRow {
   nivel_psicometrico: string;
   respuestas: Record<string, string> | null;
   areas: Record<string, number> | null;
+  notas: Record<string, number | string | null> | null;
 }
 
 /**
@@ -91,11 +112,13 @@ SELECT
     re.segunda_opcion_codigo     AS segunda_opcion_codigo,
     re.total_s2                  AS total_s2,
     re.nivel_psicometrico        AS nivel_psicometrico,
+    COALESCE(to_jsonb(no.*), '{}'::jsonb) AS notas,
     COALESCE(rj.respuestas, '{}'::jsonb) AS respuestas,
     COALESCE(aj.areas, '{}'::jsonb)      AS areas
 FROM ultima_evaluacion ue
 JOIN estudiantes est               ON est.id = ue.estudiante_id
 JOIN resultados_evaluacion re      ON re.evaluacion_id = ue.evaluacion_id
+LEFT JOIN notas_oficiales no      ON no.estudiante_id = ue.estudiante_id
 LEFT JOIN respuestas_json rj       ON rj.evaluacion_id = ue.evaluacion_id
 LEFT JOIN areas_json aj            ON aj.evaluacion_id = ue.evaluacion_id
 ORDER BY est.id ASC
@@ -122,12 +145,19 @@ function resolveAge(edadOpcion: string | null, edadExacta: number | null): numbe
   return match ? Number(match[1]) : null;
 }
 
+function toNullableNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function buildExportRow(
   questionCodes: string[],
   raw: ExportQueryRow,
 ): ExportRow {
   const answers = raw.respuestas ?? {};
   const areas = raw.areas ?? {};
+  const officialGrades = raw.notas ?? {};
 
   const optionsP11 = toOptionList(answers, 'P1.1');
   const optionsP12 = toOptionList(answers, 'P1.2');
@@ -157,6 +187,10 @@ function buildExportRow(
     seccion: raw.seccion,
   };
 
+  for (const column of OFFICIAL_GRADE_COLUMNS) {
+    row[column] = toNullableNumber(officialGrades[column]);
+  }
+
   for (const code of questionCodes) {
     row[code] = answers[code] ?? '';
   }
@@ -185,6 +219,7 @@ export function buildExportColumns(questionCodes: string[]): string[] {
     'edad',
     'sexo',
     'seccion',
+    ...OFFICIAL_GRADE_COLUMNS,
     ...questionCodes,
     'ptos_S1',
     'ptos_S3',

@@ -34,6 +34,7 @@ DROP VIEW IF EXISTS vw_puntajes_riasec_s4 CASCADE;
 DROP VIEW IF EXISTS vw_puntajes_cognitivos_s3 CASCADE;
 DROP VIEW IF EXISTS vw_resumen_seccion2_psicometrico CASCADE;
 
+DROP TABLE IF EXISTS notas_oficiales CASCADE;
 DROP TABLE IF EXISTS veredictos_psicologo CASCADE;
 DROP TABLE IF EXISTS resultados_detalle_area CASCADE;
 DROP TABLE IF EXISTS resultados_evaluacion CASCADE;
@@ -118,6 +119,25 @@ CREATE TABLE estudiantes (
     grado                 VARCHAR(40) NOT NULL DEFAULT '5.° de secundaria',
     seccion               VARCHAR(30) NOT NULL,
     created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Nueva tabla para las notas oficiales (Rendimiento Académico) en escala 0-20
+CREATE TABLE IF NOT EXISTS notas_oficiales (
+    id SERIAL PRIMARY KEY,
+    estudiante_id BIGINT UNIQUE NOT NULL REFERENCES estudiantes(id) ON DELETE CASCADE,
+    nota_matematica DECIMAL(5,2),
+    nota_comunicacion DECIMAL(5,2),
+    nota_ciencia_tecnologia DECIMAL(5,2),
+    nota_ciencias_sociales DECIMAL(5,2),
+    nota_dpcc DECIMAL(5,2),
+    nota_educacion_fisica DECIMAL(5,2),
+    nota_arte_cultura DECIMAL(5,2),
+    nota_ingles DECIMAL(5,2),
+    nota_educacion_trabajo DECIMAL(5,2),
+    nota_educacion_religiosa DECIMAL(5,2),
+    nota_castellano_segunda_lengua DECIMAL(5,2),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE evaluaciones (
@@ -911,7 +931,6 @@ BEGIN
     WHERE r.evaluacion_id = p_evaluacion_id;
 END;
 $$;
-
 
 COMMIT;
 
