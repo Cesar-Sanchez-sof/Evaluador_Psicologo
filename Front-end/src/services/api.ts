@@ -1,3 +1,4 @@
+import type { OfficialGrades } from '../types/grades';
 import type {
   EvaluationDetail,
   EvaluationListItem,
@@ -251,6 +252,7 @@ export async function previewEvaluation(
 export async function submitEvaluation(
   generalData: GeneralDataState,
   answers: StudentAnswers,
+  notasOficiales: OfficialGrades,
 ): Promise<EvaluationDetail> {
   return requestJson<EvaluationDetail>('/evaluaciones', {
     method: 'POST',
@@ -263,6 +265,7 @@ export async function submitEvaluation(
         seccion: generalData.sectionName.trim(),
       },
       respuestas: answers,
+      notasOficiales,
     }),
   });
 }

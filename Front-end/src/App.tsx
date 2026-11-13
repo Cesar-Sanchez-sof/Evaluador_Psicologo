@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Header } from './components/layout/Header';
 import { SidebarNav } from './components/layout/SidebarNav';
 import { GeneralDataForm } from './components/questionnaire/GeneralDataForm';
+import { GradesForm } from './components/questionnaire/GradesForm';
 import { PsychologistVerdictView } from './components/questionnaire/PsychologistVerdictView';
 import { SectionView } from './components/questionnaire/SectionView';
 import { WelcomeCard } from './components/questionnaire/WelcomeCard';
@@ -32,9 +33,17 @@ import {
   type StudentAnswers,
   type ViewMode,
 } from './types/questionnaire';
+import {
+  areGradesComplete,
+  buildOfficialGrades,
+  countMissingGradeSelectors,
+  TOTAL_GRADE_SELECTORS,
+  type GradesState,
+} from './types/grades';
 
 const ORDERED_STEPS: ActiveStepId[] = [
   'welcome',
+  'grades',
   'section-1',
   'section-2',
   'section-3',
@@ -63,6 +72,7 @@ export function App() {
 
   const [generalData, setGeneralData] = useState<GeneralDataState>(INITIAL_GENERAL_DATA);
   const [answers, setAnswers] = useState<StudentAnswers>({});
+  const [grades, setGrades] = useState<GradesState>({});
 
   const [scoringPreview, setScoringPreview] = useState<EvaluationScoringPreview | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
@@ -111,8 +121,13 @@ export function App() {
     generalData.sex !== '' &&
     generalData.sectionName.trim().length >= 1;
 
+  const missingGradesCount = countMissingGradeSelectors(grades);
+  const completedGradeSelectors = TOTAL_GRADE_SELECTORS - missingGradesCount;
+  const gradesComplete = areGradesComplete(grades);
+
   const isReadyToSubmit =
     isGeneralDataComplete &&
+    gradesComplete &&
     allStudentQuestionIds.length > 0 &&
     answeredCount === allStudentQuestionIds.length;
 
@@ -150,6 +165,17 @@ export function App() {
 
   const handleSelectAnswer = (questionId: string, value: string | string[] | LikertValue) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
+    setSubmitError(null);
+  };
+
+  const handleGradesChange = (next: GradesState) => {
+    setGrades(next);
+    setSubmitError(null);
+  };
+
+  const handleGeneralDataChange = (next: GeneralDataState) => {
+    setGeneralData(next);
+    setSubmitError(null);
   };
 
   const handleSelectStep = (step: ActiveStepId) => {
@@ -169,22 +195,55 @@ export function App() {
   const handleResetAll = () => {
     setGeneralData(INITIAL_GENERAL_DATA);
     setAnswers({});
+    setGrades({});
     setScoringPreview(null);
     setPreviewError(null);
     setSubmitError(null);
+    setActiveStep('welcome');
   };
 
   const handleSubmitQuestionnaire = async () => {
+    const missingRequirements: string[] = [];
+
+    if (!isGeneralDataComplete) {
+      missingRequirements.push('los Datos Generales');
+    }
+    if (!gradesComplete) {
+      missingRequirements.push(
+        `las Notas Académicas (faltan ${missingGradesCount} calificaciones)`,
+      );
+    }
+
+    const missingAnswers = Math.max(0, allStudentQuestionIds.length - answeredCount);
+    if (missingAnswers > 0) {
+      missingRequirements.push(
+        `los ítems del test (faltan ${missingAnswers} de ${allStudentQuestionIds.length})`,
+      );
+    }
+
+    if (missingRequirements.length > 0) {
+      setSubmitError(
+        `No se puede guardar la evaluación. Completa ${missingRequirements.join(' y ')}.`,
+      );
+      return;
+    }
+
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const detail = await submitEvaluation(generalData, answers);
+      const detail = await submitEvaluation(
+        generalData,
+        answers,
+        buildOfficialGrades(grades),
+      );
       const evalId = detail.hojaCorreccion.evaluacion_id;
 
       setLastCreatedEvalId(evalId);
       setGeneralData(INITIAL_GENERAL_DATA);
       setAnswers({});
+      setGrades({});
       setScoringPreview(null);
+      setActiveStep('welcome');
       setViewMode('results');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
@@ -275,10 +334,6 @@ export function App() {
     currentStepIndex < ORDERED_STEPS.length - 1 ? ORDERED_STEPS[currentStepIndex + 1] : null;
   const activeSection = structure.sections.find((sec) => sec.id === activeStep);
 
-  const saveDisabledReason = !isReadyToSubmit
-    ? `Completa los Datos Generales y los ${allStudentQuestionIds.length} ítems antes de guardar en la base de datos.`
-    : null;
-
   const submitBox = (
     <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -288,14 +343,16 @@ export function App() {
           </h3>
           <p className="mt-0.5 text-xs text-emerald-900/80">
             {isReadyToSubmit
-              ? 'Todos los datos generales y los 53 ítems están listos para guardarse y evaluarse (o continúa a Sección 7 para revisar las sumatorias y orientación antes de guardar).'
-              : `Completa los Datos Generales y los ${allStudentQuestionIds.length} ítems (${answeredCount}/${allStudentQuestionIds.length} respondidos).`}
+              ? 'Todos los datos generales, las 11 notas académicas y los 53 ítems están listos para guardarse y evaluarse (o continúa a Sección 7 para revisar las sumatorias y orientación antes de guardar).'
+              : !gradesComplete
+                ? `Completa las Notas Académicas (${completedGradeSelectors}/${TOTAL_GRADE_SELECTORS} calificaciones) y los ${allStudentQuestionIds.length} ítems (${answeredCount}/${allStudentQuestionIds.length} respondidos).`
+                : `Completa los Datos Generales y los ${allStudentQuestionIds.length} ítems (${answeredCount}/${allStudentQuestionIds.length} respondidos).`}
           </p>
         </div>
 
         <button
           type="button"
-          disabled={!isReadyToSubmit || submitting}
+          disabled={submitting}
           onClick={() => void handleSubmitQuestionnaire()}
           className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white shadow-xs transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-45"
         >
@@ -356,6 +413,9 @@ export function App() {
             answers={answers}
             totalQuestions={allStudentQuestionIds.length}
             answeredCount={answeredCount}
+            gradesComplete={gradesComplete}
+            gradesCompletedCount={completedGradeSelectors}
+            gradesTotalCount={TOTAL_GRADE_SELECTORS}
           />
 
           <div className="min-w-0 space-y-6">
@@ -370,9 +430,13 @@ export function App() {
                       data={generalData}
                       ageOptions={structure.ageOptions}
                       sexOptions={structure.sexOptions}
-                      onChange={setGeneralData}
+                      onChange={handleGeneralDataChange}
                     />
                   </div>
+                )}
+
+                {activeStep === 'grades' && (
+                  <GradesForm values={grades} onChange={handleGradesChange} />
                 )}
 
                 {activeSection && (
@@ -395,7 +459,6 @@ export function App() {
                     onSave={() => void handleSubmitQuestionnaire()}
                     saveButtonLabel="Guardar Encuesta y Resultados en PostgreSQL"
                     saving={submitting}
-                    saveDisabledReason={saveDisabledReason}
                     submitError={submitError}
                   />
                 )}
@@ -435,8 +498,9 @@ export function App() {
                       data={generalData}
                       ageOptions={structure.ageOptions}
                       sexOptions={structure.sexOptions}
-                      onChange={setGeneralData}
+                      onChange={handleGeneralDataChange}
                     />
+                    <GradesForm values={grades} onChange={handleGradesChange} />
                   </>
                 )}
 
@@ -475,7 +539,6 @@ export function App() {
                       onSave={() => void handleSubmitQuestionnaire()}
                       saveButtonLabel="Guardar Encuesta y Resultados en PostgreSQL"
                       saving={submitting}
-                      saveDisabledReason={saveDisabledReason}
                       submitError={submitError}
                     />
                   </>

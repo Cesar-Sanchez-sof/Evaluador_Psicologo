@@ -1,4 +1,4 @@
-import { CheckCircle2, ClipboardCheck, Home, ShieldAlert } from 'lucide-react';
+import { CheckCircle2, ClipboardCheck, GraduationCap, Home, ShieldAlert } from 'lucide-react';
 import {
   getSectionQuestionIds,
   isQuestionAnswered,
@@ -17,6 +17,9 @@ interface SidebarNavProps {
   answers: StudentAnswers;
   totalQuestions: number;
   answeredCount: number;
+  gradesComplete: boolean;
+  gradesCompletedCount: number;
+  gradesTotalCount: number;
 }
 
 export function SidebarNav({
@@ -27,6 +30,9 @@ export function SidebarNav({
   answers,
   totalQuestions,
   answeredCount,
+  gradesComplete,
+  gradesCompletedCount,
+  gradesTotalCount,
 }: SidebarNavProps) {
   return (
     <aside className="lg:sticky lg:top-24 lg:self-start">
@@ -63,6 +69,38 @@ export function SidebarNav({
             <div className="min-w-0 flex-1">
               <p className="truncate">Portada y Datos Generales</p>
               <p className="text-[11px] font-normal text-slate-500">Escala 1–5 y filiación</p>
+            </div>
+          </button>
+
+          <div className="my-1.5 border-t border-slate-100" />
+
+          <button
+            type="button"
+            onClick={() => onSelectStep('grades')}
+            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition ${
+              viewMode === 'step' && activeStep === 'grades'
+                ? 'bg-indigo-50 font-semibold text-indigo-950 ring-1 ring-indigo-200/80'
+                : 'text-slate-700 hover:bg-indigo-50/60'
+            }`}
+          >
+            <span
+              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${
+                gradesComplete
+                  ? 'bg-emerald-100 text-emerald-700'
+                  : 'bg-indigo-100 text-indigo-800'
+              }`}
+            >
+              {gradesComplete ? (
+                <CheckCircle2 className="h-3.5 w-3.5" />
+              ) : (
+                <GraduationCap className="h-3.5 w-3.5" />
+              )}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate">Notas Académicas</p>
+              <p className="text-[11px] font-normal text-slate-500">
+                {gradesCompletedCount}/{gradesTotalCount} calificaciones · 11 cursos
+              </p>
             </div>
           </button>
 

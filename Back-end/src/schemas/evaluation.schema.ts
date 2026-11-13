@@ -9,6 +9,25 @@ const AREA_CODES = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10'] 
 
 const likertSchema = z.coerce.number().int().min(1).max(5);
 
+/** Nota final oficial por curso (escala 0–20, admite decimales). */
+const officialGradeSchema = z.coerce.number().min(0).max(20);
+
+export const officialGradesSchema = z
+  .object({
+    dpcc: officialGradeSchema,
+    ccss: officialGradeSchema,
+    er: officialGradeSchema,
+    ept: officialGradeSchema,
+    ef: officialGradeSchema,
+    com: officialGradeSchema,
+    arte: officialGradeSchema,
+    csl: officialGradeSchema,
+    ing: officialGradeSchema,
+    mat: officialGradeSchema,
+    cyt: officialGradeSchema,
+  })
+  .strict();
+
 /** P1.1 y P1.2 aceptan una o varias opciones (`string[]` o `string` normalizado a array único). */
 const multipleAreaCurricularSchema = z
   .union([
@@ -91,6 +110,7 @@ export const createEvaluationSchema = z.object({
     seccion: z.string().trim().min(1, 'La sección es obligatoria').max(30),
   }),
   respuestas: answersSchema,
+  notasOficiales: officialGradesSchema,
   fechaAplicacion: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha esperado YYYY-MM-DD')
@@ -118,4 +138,5 @@ export const verdictSchema = z.object({
 
 export type ValidatedCreateEvaluation = z.infer<typeof createEvaluationSchema>;
 export type ValidatedAnswers = z.infer<typeof answersSchema>;
+export type ValidatedOfficialGrades = z.infer<typeof officialGradesSchema>;
 export type ValidatedVerdict = z.infer<typeof verdictSchema>;

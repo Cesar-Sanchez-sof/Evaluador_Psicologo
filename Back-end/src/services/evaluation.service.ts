@@ -1,9 +1,75 @@
+import type { PoolClient } from 'pg';
 import { query, withTransaction } from '../config/database.js';
 import type {
   ValidatedCreateEvaluation,
+  ValidatedOfficialGrades,
   ValidatedVerdict,
 } from '../schemas/evaluation.schema.js';
 import type { AreaCode } from '../types/evaluation.types.js';
+
+/**
+ * Correspondencia entre las claves que viajan por la API (una por curso) y las
+ * columnas de la tabla `notas_oficiales`.
+ */
+const OFFICIAL_GRADE_DB_COLUMNS: Record<keyof ValidatedOfficialGrades, string> = {
+  dpcc: 'nota_dpcc',
+  ccss: 'nota_ciencias_sociales',
+  er: 'nota_educacion_religiosa',
+  ept: 'nota_educacion_trabajo',
+  ef: 'nota_educacion_fisica',
+  com: 'nota_comunicacion',
+  arte: 'nota_arte_cultura',
+  csl: 'nota_castellano_segunda_lengua',
+  ing: 'nota_ingles',
+  mat: 'nota_matematica',
+  cyt: 'nota_ciencia_tecnologia',
+};
+
+function toNumberOrNull(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function mapOfficialGrades(
+  row: Record<string, unknown> | undefined,
+): ValidatedOfficialGrades | null {
+  if (!row) return null;
+
+  const entries = Object.entries(OFFICIAL_GRADE_DB_COLUMNS).map(([key, column]) => [
+    key,
+    toNumberOrNull(row[column]) ?? 0,
+  ]);
+
+  return Object.fromEntries(entries) as ValidatedOfficialGrades;
+}
+
+/**
+ * Guarda o actualiza las 11 notas finales del estudiante.
+ * La tabla tiene una fila por estudiante (`estudiante_id` UNIQUE), de modo que
+ * una nueva aplicación del cuestionario actualiza sus notas oficiales.
+ */
+async function upsertOfficialGrades(
+  client: PoolClient,
+  estudianteId: number,
+  grades: ValidatedOfficialGrades,
+): Promise<void> {
+  const keys = Object.keys(OFFICIAL_GRADE_DB_COLUMNS) as Array<
+    keyof ValidatedOfficialGrades
+  >;
+  const columns = keys.map((key) => OFFICIAL_GRADE_DB_COLUMNS[key]);
+  const placeholders = columns.map((_, index) => `$${index + 2}`);
+  const updates = columns.map((column) => `${column} = EXCLUDED.${column}`);
+
+  await client.query(
+    `INSERT INTO notas_oficiales (estudiante_id, ${columns.join(', ')})
+     VALUES ($1, ${placeholders.join(', ')})
+     ON CONFLICT (estudiante_id) DO UPDATE SET
+       ${updates.join(',\n       ')},
+       updated_at = NOW()`,
+    [estudianteId, ...keys.map((key) => grades[key])],
+  );
+}
 
 export class NotFoundError extends Error {
   statusCode = 404;
@@ -110,6 +176,8 @@ export async function createAndEvaluateSubmission(payload: ValidatedCreateEvalua
     );
     const newEvalId = Number(evalRes.rows[0].id);
 
+    await upsertOfficialGrades(client, estudianteId, payload.notasOficiales);
+
     const qRows = await client.query<QuestionLookupRow>(
       'SELECT id, codigo, tipo_respuesta FROM preguntas ORDER BY orden',
     );
@@ -189,7 +257,7 @@ export async function listEvaluations() {
 }
 
 export async function getEvaluationById(evaluacionId: number) {
-  const [hojaRes, detalleRes, respuestasRes, veredictoRes] = await Promise.all([
+  const [hojaRes, detalleRes, respuestasRes, veredictoRes, notasRes] = await Promise.all([
     query('SELECT * FROM vw_hoja_correccion_final WHERE evaluacion_id = $1', [evaluacionId]),
     query(
       `SELECT d.area_codigo, av.nombre AS area_nombre, d.ptos_s1, d.ptos_s3, d.ptos_s4, d.ptos_s5, d.bonus_s6, d.total_area, d.porcentaje_orientacion, d.orden_prioridad
@@ -212,6 +280,13 @@ export async function getEvaluationById(evaluacionId: number) {
       [evaluacionId],
     ),
     query('SELECT * FROM veredictos_psicologo WHERE evaluacion_id = $1', [evaluacionId]),
+    query(
+      `SELECT n.*
+       FROM notas_oficiales n
+       JOIN evaluaciones e ON e.estudiante_id = n.estudiante_id
+       WHERE e.id = $1`,
+      [evaluacionId],
+    ),
   ]);
 
   if (hojaRes.rowCount === 0) {
@@ -220,6 +295,7 @@ export async function getEvaluationById(evaluacionId: number) {
 
   return {
     hojaCorreccion: hojaRes.rows[0],
+    notasOficiales: mapOfficialGrades(notasRes.rows[0]),
     detalleAreas: detalleRes.rows,
     respuestas: respuestasRes.rows,
     veredictoPsicologo: veredictoRes.rows[0] ?? null,
