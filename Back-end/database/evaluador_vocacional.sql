@@ -17,7 +17,7 @@
 --   4. Opcionalmente, el psicólogo registra su veredicto final en `veredictos_psicologo`.
 --
 -- Investigadores: Cesar Diego Sanchez Chiroque & Renzo Daniel Ponce Evangelista
--- Filiación: Universidad Privada Antenor Orrego (UPAO)
+-- Filiación: Universidad Privada Antenogit checkout -b feature/eliminar-castellano-segunda-lenguar Orrego (UPAO)
 -- =============================================================================
 
 BEGIN;
@@ -939,4 +939,4 @@ COMMIT;
 -- =============================================================================
 -- SELECT * FROM resultados_evaluacion ORDER BY evaluacion_id;
 -- SELECT * FROM resultados_detalle_area ORDER BY evaluacion_id, orden_prioridad;
--- SELECT * FROM vw_hoja_correccion_final ORDER BY evaluacion_id;
+-- SELECT * FROM vw_hoja_correccion_final ORDER BY evaluacion_id;git checkout -b feature/eliminar-castellano-segunda-lengua
