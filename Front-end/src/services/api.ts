@@ -70,6 +70,7 @@ interface BackendStructurePayload {
   datosGenerales: {
     edades: string[];
     sexos: string[];
+    secciones?: string[];
   };
   secciones: BackendSectionRow[];
   preguntas: BackendQuestionRow[];
@@ -226,6 +227,7 @@ export async function fetchQuestionnaireStructure(): Promise<QuestionnaireStruct
     likertScale: payload.escalaLikert,
     ageOptions: payload.datosGenerales.edades,
     sexOptions: payload.datosGenerales.sexos,
+    sectionOptions: payload.datosGenerales.secciones || ['A', 'B', 'C', 'D', 'E', 'F'],
     sections,
     vocationalAreas,
   };

@@ -85,7 +85,7 @@ interface QuestionLookupRow {
 }
 
 export async function getQuestionnaireStructure() {
-  const [secciones, preguntas, opciones, areas] = await Promise.all([
+  const [secciones, preguntas, opciones, areas, seccionesAcademicasRes] = await Promise.all([
     query('SELECT id, numero, codigo, titulo, instruccion, suma_puntaje FROM secciones_cuestionario ORDER BY numero'),
     query(
       `SELECT id, seccion_id, codigo, subgrupo_codigo, subgrupo_nombre, enunciado, tipo_respuesta, es_puntuable, es_indicador_apoyo, orden
@@ -93,7 +93,15 @@ export async function getQuestionnaireStructure() {
     ),
     query('SELECT id, pregunta_id, codigo_opcion, texto_opcion, orden FROM opciones_pregunta ORDER BY pregunta_id, orden'),
     query('SELECT codigo, nombre, ejemplos_cortos, carreras_afines FROM areas_vocacionales ORDER BY codigo'),
+    query<{ codigo: string; nombre: string }>(
+      'SELECT codigo, nombre FROM secciones_academicas WHERE activo = TRUE ORDER BY orden, codigo',
+    ).catch(() => ({ rows: [] as Array<{ codigo: string; nombre: string }> })),
   ]);
+
+  const seccionesAcademicas =
+    seccionesAcademicasRes.rows.length > 0
+      ? seccionesAcademicasRes.rows.map((s) => s.codigo)
+      : ['A', 'B', 'C', 'D', 'E', 'F'];
 
   return {
     meta: {
@@ -135,6 +143,7 @@ export async function getQuestionnaireStructure() {
     datosGenerales: {
       edades: ['15 años', '16 años', '17 años', '18 años', 'Otro'],
       sexos: ['Masculino', 'Femenino'],
+      secciones: seccionesAcademicas,
     },
     secciones: secciones.rows,
     preguntas: preguntas.rows,
