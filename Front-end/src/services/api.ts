@@ -16,7 +16,9 @@ import type {
   VocationalAreaOption,
 } from '../types/questionnaire';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:3001/api';
+const rawApiBaseUrl =
+  (import.meta.env.VITE_API_URL as string | undefined)?.trim() || 'http://localhost:3001/api';
+const API_BASE_URL = rawApiBaseUrl.replace(/\/+$/, '');
 
 interface ApiResponse<T> {
   ok: boolean;
