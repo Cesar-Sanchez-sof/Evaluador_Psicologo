@@ -21,7 +21,7 @@ test('buildCsv conserva las respuestas múltiples separadas por comas dentro de 
   assert.equal(csv, 'P1.1\r\n"a,b,k"\r\n');
 });
 
-test('buildExportColumns incluye las 11 notas oficiales después de los datos generales', () => {
+test('buildExportColumns incluye las 10 notas oficiales después de los datos generales', () => {
   const columns = buildExportColumns(['P1.1']);
   const gradeColumns = [
     'nota_dpcc',
@@ -31,12 +31,11 @@ test('buildExportColumns incluye las 11 notas oficiales después de los datos ge
     'nota_educacion_fisica',
     'nota_comunicacion',
     'nota_arte_cultura',
-    'nota_castellano_segunda_lengua',
     'nota_ingles',
     'nota_matematica',
     'nota_ciencia_tecnologia',
   ];
 
-  assert.deepEqual(columns.slice(4, 15), gradeColumns);
-  assert.equal(columns.length, 4 + 11 + 1 + 7 + 10 + 2);
+  assert.deepEqual(columns.slice(4, 14), gradeColumns);
+  assert.equal(columns.length, 4 + 10 + 1 + 7 + 10 + 2);
 });

@@ -21,7 +21,6 @@ export const officialGradesSchema = z
     ef: officialGradeSchema,
     com: officialGradeSchema,
     arte: officialGradeSchema,
-    csl: officialGradeSchema,
     ing: officialGradeSchema,
     mat: officialGradeSchema,
     cyt: officialGradeSchema,

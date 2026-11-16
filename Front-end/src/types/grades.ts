@@ -28,7 +28,6 @@ export type CourseId =
   | 'ef'
   | 'com'
   | 'arte'
-  | 'csl'
   | 'ing'
   | 'mat'
   | 'cyt';
@@ -146,24 +145,6 @@ export const GRADE_COURSES: GradeCourse[] = [
         name: 'Aprecia de manera crítica manifestaciones artístico-culturales',
       },
       { id: 'arte-2', name: 'Crea proyectos desde los lenguajes artísticos' },
-    ],
-  },
-  {
-    id: 'csl',
-    name: 'Castellano como Segunda Lengua',
-    competencies: [
-      {
-        id: 'csl-1',
-        name: 'Se comunica oralmente en castellano como segunda lengua',
-      },
-      {
-        id: 'csl-2',
-        name: 'Lee diversos tipos de textos escritos en castellano como segunda lengua',
-      },
-      {
-        id: 'csl-3',
-        name: 'Escribe diversos tipos de textos en castellano como segunda lengua',
-      },
     ],
   },
   {

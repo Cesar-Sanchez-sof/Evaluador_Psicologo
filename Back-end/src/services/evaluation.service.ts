@@ -19,7 +19,6 @@ const OFFICIAL_GRADE_DB_COLUMNS: Record<keyof ValidatedOfficialGrades, string> =
   ef: 'nota_educacion_fisica',
   com: 'nota_comunicacion',
   arte: 'nota_arte_cultura',
-  csl: 'nota_castellano_segunda_lengua',
   ing: 'nota_ingles',
   mat: 'nota_matematica',
   cyt: 'nota_ciencia_tecnologia',
@@ -45,7 +44,7 @@ function mapOfficialGrades(
 }
 
 /**
- * Guarda o actualiza las 11 notas finales del estudiante.
+ * Guarda o actualiza las 10 notas finales del estudiante.
  * La tabla tiene una fila por estudiante (`estudiante_id` UNIQUE), de modo que
  * una nueva aplicación del cuestionario actualiza sus notas oficiales.
  */
