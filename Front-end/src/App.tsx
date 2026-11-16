@@ -1,4 +1,5 @@
 import {
+  Activity,
   AlertCircle,
   ArrowLeft,
   ArrowRight,
@@ -18,7 +19,9 @@ import { SectionView } from './components/questionnaire/SectionView';
 import { WelcomeCard } from './components/questionnaire/WelcomeCard';
 import { ObservationsDrawer } from './components/observations/ObservationsDrawer';
 import { EvaluationResultsPanel } from './components/results/EvaluationResultsPanel';
+import { LiveScoreTrackerPanel } from './components/results/LiveScoreTrackerPanel';
 import { detectQuestionnaireAlerts } from './services/observationsHelper';
+import { calculateLiveAreaScores } from './services/liveScoreTracker';
 import {
   fetchQuestionnaireStructure,
   previewEvaluation,
@@ -84,6 +87,7 @@ export function App() {
   const [evaluatorName, setEvaluatorName] = useState<string>('');
   const [cpspNumber, setCpspNumber] = useState<string>('');
   const [isObservationsDrawerOpen, setIsObservationsDrawerOpen] = useState<boolean>(false);
+  const [isScoreTrackerOpen, setIsScoreTrackerOpen] = useState<boolean>(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -175,6 +179,9 @@ export function App() {
     () => detectQuestionnaireAlerts(answers, scoringPreview),
     [answers, scoringPreview],
   );
+
+  // Puntuación acumulada en tiempo real por cada una de las 10 áreas vocacionales
+  const liveScores = useMemo(() => calculateLiveAreaScores(answers), [answers]);
 
   const handleAddObservation = (text: string) => {
     setObservations((prev) => {
@@ -428,13 +435,31 @@ export function App() {
               {allStudentQuestionIds.length} ítems · 10 áreas vocacionales).
             </span>
           </div>
-          <span className="font-medium text-emerald-800">
-            {viewMode === 'step'
-              ? 'Modo: Por secciones'
-              : viewMode === 'all'
-                ? 'Modo: Todas las preguntas'
-                : 'Modo: Resultados y Revisión BD'}
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            {viewMode !== 'results' && liveScores.totalPuntosGeneral > 0 && (
+              <button
+                type="button"
+                onClick={() => setIsScoreTrackerOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-white px-2.5 py-1 text-xs font-bold text-emerald-900 shadow-2xs hover:bg-emerald-100/70 transition"
+                title="Abrir desglose y ranking de puntos en vivo"
+              >
+                <Activity className="h-3.5 w-3.5 text-emerald-600 animate-pulse" />
+                <span>
+                  1.ª Opción en vivo: Área {liveScores.primeraOpcion?.codigo} ({liveScores.primeraOpcion?.total} pts)
+                </span>
+                <span className="text-[11px] font-medium text-emerald-700 underline ml-0.5">
+                  Ver 10 áreas
+                </span>
+              </button>
+            )}
+            <span className="font-medium text-emerald-800">
+              {viewMode === 'step'
+                ? 'Modo: Por secciones'
+                : viewMode === 'all'
+                  ? 'Modo: Todas las preguntas'
+                  : 'Modo: Resultados y Revisión BD'}
+            </span>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[290px_1fr]">
@@ -604,24 +629,32 @@ export function App() {
 
       {/* Apartado interactivo para ir realizando observaciones durante el cuestionario */}
       {viewMode !== 'results' && (
-        <ObservationsDrawer
-          isOpen={isObservationsDrawerOpen}
-          onToggle={() => setIsObservationsDrawerOpen((prev) => !prev)}
-          alerts={detectedAlerts}
-          observations={observations}
-          onObservationsChange={setObservations}
-          evaluatorName={evaluatorName}
-          onEvaluatorNameChange={setEvaluatorName}
-          cpspNumber={cpspNumber}
-          onCpspNumberChange={setCpspNumber}
-          onNavigateToVerdict={() => {
-            if (viewMode === 'step') {
-              handleSelectStep('section-7');
-            } else {
-              window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-            }
-          }}
-        />
+        <>
+          <ObservationsDrawer
+            isOpen={isObservationsDrawerOpen}
+            onToggle={() => setIsObservationsDrawerOpen((prev) => !prev)}
+            alerts={detectedAlerts}
+            observations={observations}
+            onObservationsChange={setObservations}
+            evaluatorName={evaluatorName}
+            onEvaluatorNameChange={setEvaluatorName}
+            cpspNumber={cpspNumber}
+            onCpspNumberChange={setCpspNumber}
+            onNavigateToVerdict={() => {
+              if (viewMode === 'step') {
+                handleSelectStep('section-7');
+              } else {
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+              }
+            }}
+          />
+
+          <LiveScoreTrackerPanel
+            isOpen={isScoreTrackerOpen}
+            onToggle={() => setIsScoreTrackerOpen((prev) => !prev)}
+            scoreData={liveScores}
+          />
+        </>
       )}
     </div>
   );

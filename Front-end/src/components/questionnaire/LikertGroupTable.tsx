@@ -4,6 +4,7 @@ import type {
   LikertValue,
   StudentAnswers,
 } from '../../types/questionnaire';
+import { QuestionScoreImpactBadge } from './QuestionScoreImpactBadge';
 
 interface LikertGroupTableProps {
   group: LikertGroupBlock;
@@ -67,11 +68,23 @@ export function LikertGroupTable({
                       currentValue ? 'bg-blue-50/25' : 'hover:bg-slate-50/70'
                     }`}
                   >
-                    <div className="flex items-start gap-3">
-                      <span className="mt-0.5 inline-flex w-14 shrink-0 items-center justify-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-bold text-blue-900">
-                        {item.code}
-                      </span>
-                      <p className="text-sm leading-relaxed text-slate-800">{item.statement}</p>
+                    <div className="flex flex-col">
+                      <div className="flex items-start gap-3">
+                        <span className="mt-0.5 inline-flex w-14 shrink-0 items-center justify-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-bold text-blue-900">
+                          {item.code}
+                        </span>
+                        <p className="text-sm leading-relaxed text-slate-800">{item.statement}</p>
+                      </div>
+
+                      {/* Indicador de impacto de puntos sumados/restados */}
+                      {currentValue && (
+                        <div className="mt-1 pl-17">
+                          <QuestionScoreImpactBadge
+                            questionCode={item.code}
+                            selectedValue={currentValue}
+                          />
+                        </div>
+                      )}
                     </div>
 
                     <div

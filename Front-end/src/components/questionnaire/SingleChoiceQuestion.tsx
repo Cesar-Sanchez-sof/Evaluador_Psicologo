@@ -1,5 +1,7 @@
 import { Check } from 'lucide-react';
+import { getOptionScorePreview } from '../../services/liveScoreTracker';
 import type { ChoiceQuestion } from '../../types/questionnaire';
+import { QuestionScoreImpactBadge } from './QuestionScoreImpactBadge';
 
 interface SingleChoiceQuestionProps {
   question: ChoiceQuestion;
@@ -68,6 +70,8 @@ export function SingleChoiceQuestion({
       >
         {question.options.map((option) => {
           const isSelected = selectedList.includes(option.code);
+          const preview = getOptionScorePreview(question.code, option.code);
+
           return (
             <button
               key={option.code}
@@ -75,31 +79,53 @@ export function SingleChoiceQuestion({
               role={isMultiple ? 'checkbox' : 'radio'}
               aria-checked={isSelected}
               onClick={() => handleOptionClick(option.code)}
-              className={`group flex items-start gap-3 rounded-xl border px-4 py-3 text-left transition ${
+              className={`group flex items-start justify-between gap-3 rounded-xl border px-4 py-3 text-left transition ${
                 isSelected
                   ? 'border-blue-700 bg-blue-50/80 text-blue-950 ring-1 ring-blue-700/20'
                   : 'border-slate-200 bg-slate-50/40 text-slate-700 hover:border-blue-300 hover:bg-blue-50/30'
               }`}
             >
-              <span
-                className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center text-xs font-bold uppercase transition ${
-                  isMultiple ? 'rounded-md' : 'rounded-full'
-                } ${
-                  isSelected
-                    ? 'bg-blue-700 text-white'
-                    : 'border border-slate-300 bg-white text-slate-600 group-hover:border-blue-400'
-                }`}
-              >
-                {isSelected ? <Check className="h-3.5 w-3.5" /> : option.code}
-              </span>
-              <span className="text-sm leading-snug">
-                <span className="mr-1.5 font-semibold text-slate-500">{option.code})</span>
-                {option.label}
-              </span>
+              <div className="flex items-start gap-3">
+                <span
+                  className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center text-xs font-bold uppercase transition ${
+                    isMultiple ? 'rounded-md' : 'rounded-full'
+                  } ${
+                    isSelected
+                      ? 'bg-blue-700 text-white'
+                      : 'border border-slate-300 bg-white text-slate-600 group-hover:border-blue-400'
+                  }`}
+                >
+                  {isSelected ? <Check className="h-3.5 w-3.5" /> : option.code}
+                </span>
+                <span className="text-sm leading-snug">
+                  <span className="mr-1.5 font-semibold text-slate-500">{option.code})</span>
+                  {option.label}
+                </span>
+              </div>
+
+              {preview && (
+                <span
+                  className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                    preview.delta > 0
+                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300/60'
+                      : 'bg-rose-100 text-rose-800 border border-rose-300/60'
+                  }`}
+                  title={`Plantilla: Otorga ${preview.delta > 0 ? `+${preview.delta}` : preview.delta} pt a las áreas ${preview.areas.join(', ')}`}
+                >
+                  {preview.delta > 0 ? `+${preview.delta}` : preview.delta} ({preview.areas.join(', ')})
+                </span>
+              )}
             </button>
           );
         })}
       </div>
+
+      {/* Indicador de impacto de puntos sumados/restados por la selección actual */}
+      <QuestionScoreImpactBadge
+        questionCode={question.code}
+        selectedValue={selectedValue}
+        showExplanation={true}
+      />
     </div>
   );
 }
