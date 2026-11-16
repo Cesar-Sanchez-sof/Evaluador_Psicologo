@@ -1,17 +1,32 @@
 import { Pool, type PoolClient, type QueryResult, type QueryResultRow } from 'pg';
 import { env } from './env.js';
 
-export const pool = new Pool({
-  host: env.DB_HOST,
-  port: env.DB_PORT,
-  database: env.DB_NAME,
-  user: env.DB_USER,
-  password: env.DB_PASSWORD,
-  max: env.DB_POOL_MAX,
-  idleTimeoutMillis: 30_000,
-  connectionTimeoutMillis: 5_000,
-  ssl: env.DB_SSL ? { rejectUnauthorized: false } : false,
-});
+export const pool = new Pool(
+  env.DATABASE_URL
+    ? {
+        connectionString: env.DATABASE_URL,
+        max: env.DB_POOL_MAX,
+        idleTimeoutMillis: 30_000,
+        connectionTimeoutMillis: 10_000,
+        ssl:
+          env.DATABASE_URL.includes('neon.tech') ||
+          env.DATABASE_URL.includes('sslmode=require') ||
+          env.DB_SSL
+            ? { rejectUnauthorized: false }
+            : false,
+      }
+    : {
+        host: env.DB_HOST,
+        port: env.DB_PORT,
+        database: env.DB_NAME,
+        user: env.DB_USER,
+        password: env.DB_PASSWORD,
+        max: env.DB_POOL_MAX,
+        idleTimeoutMillis: 30_000,
+        connectionTimeoutMillis: 10_000,
+        ssl: env.DB_SSL ? { rejectUnauthorized: false } : false,
+      },
+);
 
 pool.on('error', (err) => {
   console.error('[PostgreSQL Pool Error]', err.message);

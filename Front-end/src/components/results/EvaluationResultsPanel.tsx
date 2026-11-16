@@ -1,9 +1,19 @@
-import { CheckCircle2, Download, Loader2, NotebookPen, RefreshCw, Save } from 'lucide-react';
+import {
+  CheckCircle2,
+  Download,
+  FileSpreadsheet,
+  Loader2,
+  NotebookPen,
+  RefreshCw,
+  Save,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
   buildExportUrl,
+  buildGradesExportUrl,
   fetchEvaluationDetail,
   fetchEvaluations,
+  fetchSections,
   savePsychologistVerdict,
 } from '../../services/api';
 import type { EvaluationDetail, EvaluationListItem } from '../../types/questionnaire';
@@ -18,6 +28,8 @@ export function EvaluationResultsPanel({
 }: EvaluationResultsPanelProps) {
   const [evaluations, setEvaluations] = useState<EvaluationListItem[]>([]);
   const [selectedDetail, setSelectedDetail] = useState<EvaluationDetail | null>(null);
+  const [availableSections, setAvailableSections] = useState<string[]>([]);
+  const [selectedSectionFilter, setSelectedSectionFilter] = useState<string>('todas');
   const [loadingList, setLoadingList] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,11 +41,20 @@ export function EvaluationResultsPanel({
   const [verdictSuccess, setVerdictSuccess] = useState<string | null>(null);
   const [verdictError, setVerdictError] = useState<string | null>(null);
 
+  const loadSections = async () => {
+    try {
+      const list = await fetchSections();
+      setAvailableSections(list);
+    } catch {
+      // Si falla, se conservan las secciones disponibles en la lista de evaluaciones
+    }
+  };
+
   const loadList = async (selectId?: number | string | null) => {
     setLoadingList(true);
     setError(null);
     try {
-      const list = await fetchEvaluations();
+      const [list] = await Promise.all([fetchEvaluations(), loadSections()]);
       setEvaluations(list);
       const targetId = selectId ?? list[0]?.evaluacion_id;
       if (targetId !== undefined && targetId !== null) {
@@ -71,8 +92,28 @@ export function EvaluationResultsPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialSelectedEvaluationId]);
 
-  const handleExport = (format: 'csv' | 'json') => {
-    window.open(buildExportUrl(format), '_blank', 'noopener,noreferrer');
+  const handleExportGradesExcel = () => {
+    window.open(
+      buildGradesExportUrl(selectedSectionFilter, 'xlsx'),
+      '_blank',
+      'noopener,noreferrer',
+    );
+  };
+
+  const handleExportGradesCsv = () => {
+    window.open(
+      buildGradesExportUrl(selectedSectionFilter, 'csv'),
+      '_blank',
+      'noopener,noreferrer',
+    );
+  };
+
+  const handleExportDataset = (format: 'csv' | 'json') => {
+    window.open(
+      buildExportUrl(format, selectedSectionFilter),
+      '_blank',
+      'noopener,noreferrer',
+    );
   };
 
   const handleSaveVerdict = async () => {
@@ -110,6 +151,21 @@ export function EvaluationResultsPanel({
 
   const hoja = selectedDetail?.hojaCorreccion;
 
+  const allSections = Array.from(
+    new Set([
+      ...availableSections,
+      ...evaluations.map((e) => e.seccion).filter((s): s is string => Boolean(s && s.trim())),
+    ]),
+  ).sort();
+
+  const filteredEvaluations =
+    selectedSectionFilter === 'todas'
+      ? evaluations
+      : evaluations.filter(
+          (ev) =>
+            ev.seccion?.trim().toLowerCase() === selectedSectionFilter.trim().toLowerCase(),
+        );
+
   return (
     <div className="space-y-6">
       {error && (
@@ -119,40 +175,95 @@ export function EvaluationResultsPanel({
       )}
 
       <section className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/80 px-6 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 bg-slate-50/80 px-6 py-4">
           <div>
             <h2 className="text-base font-bold text-slate-900">
               Evaluaciones Registradas en PostgreSQL
             </h2>
             <p className="text-xs text-slate-500">
-              Selecciona un estudiante para visualizar sus sumatorias (S1–S6), puntajes y
-              porcentaje de orientación vocacional almacenados
+              Selecciona un estudiante para visualizar sus sumatorias (S1–S6), notas y
+              orientación vocacional
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Filtro por Sección */}
+            <div className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs shadow-2xs">
+              <span className="font-semibold text-slate-600">Sección:</span>
+              <select
+                aria-label="Filtrar por sección escolar"
+                value={selectedSectionFilter}
+                onChange={(e) => setSelectedSectionFilter(e.target.value)}
+                className="bg-transparent font-bold text-slate-900 focus:outline-hidden"
+              >
+                <option value="todas">Todas ({evaluations.length})</option>
+                {allSections.map((sec) => {
+                  const count = evaluations.filter(
+                    (e) => e.seccion?.trim().toLowerCase() === sec.trim().toLowerCase(),
+                  ).length;
+                  return (
+                    <option key={sec} value={sec}>
+                      Sección {sec} {count > 0 ? `(${count})` : ''}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            {/* Exportar a Excel (.xlsx) */}
             <button
               type="button"
-              onClick={() => handleExport('csv')}
-              title="Descargar dataset plano para Pandas (una fila por estudiante)"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100"
+              onClick={handleExportGradesExcel}
+              title={`Exportar notas oficiales a Excel (.xlsx) — ${
+                selectedSectionFilter === 'todas'
+                  ? 'Todas las secciones'
+                  : `Sección ${selectedSectionFilter}`
+              }`}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-800"
             >
-              <Download className="h-3.5 w-3.5" />
-              Exportar CSV
+              <FileSpreadsheet className="h-4 w-4" />
+              Exportar Notas (Excel)
             </button>
+
+            {/* Exportar Notas CSV */}
             <button
               type="button"
-              onClick={() => handleExport('json')}
-              title="Descargar el mismo dataset en formato JSON"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-800 hover:bg-indigo-100"
+              onClick={handleExportGradesCsv}
+              title="Descargar notas oficiales en CSV con BOM UTF-8 para Excel"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100"
             >
               <Download className="h-3.5 w-3.5" />
-              Exportar JSON
+              Notas CSV
             </button>
+
+            {/* Exportar Dataset ML */}
+            <div className="flex items-center rounded-lg border border-slate-200 bg-white">
+              <button
+                type="button"
+                onClick={() => handleExportDataset('csv')}
+                title="Descargar dataset ML para Pandas (CSV plano de 53 ítems)"
+                className="inline-flex items-center gap-1 rounded-l-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Dataset ML (CSV)
+              </button>
+              <span className="h-4 w-px bg-slate-200" />
+              <button
+                type="button"
+                onClick={() => handleExportDataset('json')}
+                title="Descargar dataset ML en JSON"
+                className="inline-flex items-center gap-1 rounded-r-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+              >
+                JSON
+              </button>
+            </div>
+
+            {/* Actualizar lista */}
             <button
               type="button"
               onClick={() => void loadList(hoja?.evaluacion_id)}
               disabled={loadingList}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${loadingList ? 'animate-spin' : ''}`} />
               Actualizar
@@ -161,13 +272,15 @@ export function EvaluationResultsPanel({
         </div>
 
         <div className="divide-y divide-slate-100">
-          {evaluations.length === 0 && !loadingList && (
+          {filteredEvaluations.length === 0 && !loadingList && (
             <div className="p-8 text-center text-sm text-slate-500">
-              Aún no hay evaluaciones guardadas en la base de datos.
+              {evaluations.length === 0
+                ? 'Aún no hay evaluaciones guardadas en la base de datos.'
+                : `No se encontraron evaluaciones registradas para la Sección "${selectedSectionFilter}".`}
             </div>
           )}
 
-          {evaluations.map((ev) => {
+          {filteredEvaluations.map((ev) => {
             const isSelected = String(hoja?.evaluacion_id) === String(ev.evaluacion_id);
             return (
               <button
