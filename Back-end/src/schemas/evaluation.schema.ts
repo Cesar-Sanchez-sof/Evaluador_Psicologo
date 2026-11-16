@@ -21,7 +21,6 @@ export const officialGradesSchema = z
     ef: officialGradeSchema,
     com: officialGradeSchema,
     arte: officialGradeSchema,
-    csl: officialGradeSchema,
     ing: officialGradeSchema,
     mat: officialGradeSchema,
     cyt: officialGradeSchema,
@@ -116,6 +115,9 @@ export const createEvaluationSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha esperado YYYY-MM-DD')
     .optional(),
   tiempoLlenadoMin: z.coerce.number().int().min(1).max(240).optional(),
+  psicologoEvaluador: z.string().trim().max(180).optional(),
+  cpspNumero: z.string().trim().max(30).optional(),
+  observacionesPsicopedagogicas: z.string().trim().max(3000).optional(),
 });
 
 export const previewScoreSchema = z.object({

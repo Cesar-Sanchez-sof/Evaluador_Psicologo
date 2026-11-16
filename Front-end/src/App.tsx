@@ -16,7 +16,9 @@ import { GradesForm } from './components/questionnaire/GradesForm';
 import { PsychologistVerdictView } from './components/questionnaire/PsychologistVerdictView';
 import { SectionView } from './components/questionnaire/SectionView';
 import { WelcomeCard } from './components/questionnaire/WelcomeCard';
+import { ObservationsDrawer } from './components/observations/ObservationsDrawer';
 import { EvaluationResultsPanel } from './components/results/EvaluationResultsPanel';
+import { detectQuestionnaireAlerts } from './services/observationsHelper';
 import {
   fetchQuestionnaireStructure,
   previewEvaluation,
@@ -77,6 +79,11 @@ export function App() {
   const [scoringPreview, setScoringPreview] = useState<EvaluationScoringPreview | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
+
+  const [observations, setObservations] = useState<string>('');
+  const [evaluatorName, setEvaluatorName] = useState<string>('');
+  const [cpspNumber, setCpspNumber] = useState<string>('');
+  const [isObservationsDrawerOpen, setIsObservationsDrawerOpen] = useState<boolean>(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -163,6 +170,21 @@ export function App() {
     };
   }, [structure, allStudentQuestionIds.length, missingQuestionsCount, answers]);
 
+  // Alertas automáticas de la Plantilla de Corrección (P1.7, S2, P5.4, S6, Veredicto)
+  const detectedAlerts = useMemo(
+    () => detectQuestionnaireAlerts(answers, scoringPreview),
+    [answers, scoringPreview],
+  );
+
+  const handleAddObservation = (text: string) => {
+    setObservations((prev) => {
+      const trimmed = prev.trim();
+      if (!trimmed) return text;
+      if (trimmed.includes(text)) return prev;
+      return `${trimmed}\n• ${text}`;
+    });
+  };
+
   const handleSelectAnswer = (questionId: string, value: string | string[] | LikertValue) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
     setSubmitError(null);
@@ -196,6 +218,9 @@ export function App() {
     setGeneralData(INITIAL_GENERAL_DATA);
     setAnswers({});
     setGrades({});
+    setObservations('');
+    setEvaluatorName('');
+    setCpspNumber('');
     setScoringPreview(null);
     setPreviewError(null);
     setSubmitError(null);
@@ -235,6 +260,11 @@ export function App() {
         generalData,
         answers,
         buildOfficialGrades(grades),
+        {
+          observacionesPsicopedagogicas: observations,
+          psicologoEvaluador: evaluatorName,
+          cpspNumero: cpspNumber,
+        },
       );
       const evalId = detail.hojaCorreccion.evaluacion_id;
 
@@ -242,6 +272,9 @@ export function App() {
       setGeneralData(INITIAL_GENERAL_DATA);
       setAnswers({});
       setGrades({});
+      setObservations('');
+      setEvaluatorName('');
+      setCpspNumber('');
       setScoringPreview(null);
       setActiveStep('welcome');
       setViewMode('results');
@@ -445,6 +478,7 @@ export function App() {
                     likertScale={structure.likertScale}
                     answers={answers}
                     onSelectAnswer={handleSelectAnswer}
+                    onAddObservation={handleAddObservation}
                   />
                 )}
 
@@ -456,6 +490,13 @@ export function App() {
                     loadingPreview={loadingPreview}
                     previewError={previewError}
                     missingQuestionsCount={missingQuestionsCount}
+                    alerts={detectedAlerts}
+                    observations={observations}
+                    onObservationsChange={setObservations}
+                    evaluatorName={evaluatorName}
+                    onEvaluatorNameChange={setEvaluatorName}
+                    cpspNumber={cpspNumber}
+                    onCpspNumberChange={setCpspNumber}
                     onSave={() => void handleSubmitQuestionnaire()}
                     saveButtonLabel="Guardar Encuesta y Resultados en PostgreSQL"
                     saving={submitting}
@@ -512,6 +553,7 @@ export function App() {
                       likertScale={structure.likertScale}
                       answers={answers}
                       onSelectAnswer={handleSelectAnswer}
+                      onAddObservation={handleAddObservation}
                       searchQuery={searchQuery}
                     />
                   ))
@@ -536,6 +578,13 @@ export function App() {
                       loadingPreview={loadingPreview}
                       previewError={previewError}
                       missingQuestionsCount={missingQuestionsCount}
+                      alerts={detectedAlerts}
+                      observations={observations}
+                      onObservationsChange={setObservations}
+                      evaluatorName={evaluatorName}
+                      onEvaluatorNameChange={setEvaluatorName}
+                      cpspNumber={cpspNumber}
+                      onCpspNumberChange={setCpspNumber}
                       onSave={() => void handleSubmitQuestionnaire()}
                       saveButtonLabel="Guardar Encuesta y Resultados en PostgreSQL"
                       saving={submitting}
@@ -552,6 +601,28 @@ export function App() {
           </div>
         </div>
       </main>
+
+      {/* Apartado interactivo para ir realizando observaciones durante el cuestionario */}
+      {viewMode !== 'results' && (
+        <ObservationsDrawer
+          isOpen={isObservationsDrawerOpen}
+          onToggle={() => setIsObservationsDrawerOpen((prev) => !prev)}
+          alerts={detectedAlerts}
+          observations={observations}
+          onObservationsChange={setObservations}
+          evaluatorName={evaluatorName}
+          onEvaluatorNameChange={setEvaluatorName}
+          cpspNumber={cpspNumber}
+          onCpspNumberChange={setCpspNumber}
+          onNavigateToVerdict={() => {
+            if (viewMode === 'step') {
+              handleSelectStep('section-7');
+            } else {
+              window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

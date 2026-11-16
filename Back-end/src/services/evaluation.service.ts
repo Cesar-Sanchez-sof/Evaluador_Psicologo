@@ -19,7 +19,6 @@ const OFFICIAL_GRADE_DB_COLUMNS: Record<keyof ValidatedOfficialGrades, string> =
   ef: 'nota_educacion_fisica',
   com: 'nota_comunicacion',
   arte: 'nota_arte_cultura',
-  csl: 'nota_castellano_segunda_lengua',
   ing: 'nota_ingles',
   mat: 'nota_matematica',
   cyt: 'nota_ciencia_tecnologia',
@@ -45,7 +44,7 @@ function mapOfficialGrades(
 }
 
 /**
- * Guarda o actualiza las 11 notas finales del estudiante.
+ * Guarda o actualiza las 10 notas finales del estudiante.
  * La tabla tiene una fila por estudiante (`estudiante_id` UNIQUE), de modo que
  * una nueva aplicación del cuestionario actualiza sus notas oficiales.
  */
@@ -214,6 +213,41 @@ export async function createAndEvaluateSubmission(payload: ValidatedCreateEvalua
 
     // Ejecuta el motor SQL de la Plantilla de Corrección y persiste en resultados_evaluacion y resultados_detalle_area
     await client.query('SELECT * FROM fn_calcular_y_guardar_evaluacion($1)', [newEvalId]);
+
+    // Si se enviaron observaciones psicopedagógicas o evaluador, registrar el veredicto
+    if (payload.observacionesPsicopedagogicas || payload.psicologoEvaluador) {
+      const resRow = await client.query<{ primera_opcion_codigo: string; segunda_opcion_codigo: string }>(
+        'SELECT primera_opcion_codigo, segunda_opcion_codigo FROM resultados_evaluacion WHERE evaluacion_id = $1',
+        [newEvalId],
+      );
+      const row = resRow.rows[0];
+      if (row) {
+        await client.query(
+          `INSERT INTO veredictos_psicologo (
+             evaluacion_id, psicologo_evaluador, cpsp_numero, fecha_evaluacion,
+             area_primera_opcion_codigo, area_segunda_opcion_codigo, es_vocacion_dual,
+             observaciones_psicopedagogicas
+           ) VALUES ($1, $2, $3, CURRENT_DATE, $4, $5, FALSE, $6)
+           ON CONFLICT (evaluacion_id) DO UPDATE SET
+             psicologo_evaluador = EXCLUDED.psicologo_evaluador,
+             cpsp_numero = EXCLUDED.cpsp_numero,
+             observaciones_psicopedagogicas = EXCLUDED.observaciones_psicopedagogicas,
+             updated_at = NOW()`,
+          [
+            newEvalId,
+            payload.psicologoEvaluador || 'Psicólogo / Evaluador',
+            payload.cpspNumero ?? null,
+            row.primera_opcion_codigo,
+            row.segunda_opcion_codigo ?? null,
+            payload.observacionesPsicopedagogicas ?? null,
+          ],
+        );
+        await client.query(
+          `UPDATE evaluaciones SET estado = 'revisada', updated_at = NOW() WHERE id = $1`,
+          [newEvalId],
+        );
+      }
+    }
 
     return newEvalId;
   });

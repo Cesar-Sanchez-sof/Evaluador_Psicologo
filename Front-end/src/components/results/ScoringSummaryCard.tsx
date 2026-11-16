@@ -70,6 +70,9 @@ export interface ScoringDisplayModel {
   p6_4Computadora: string | null;
   p6_5PlanPrincipal: string | null;
   p6_6TipoInstitucion: string | null;
+  observacionesPsicopedagogicas?: string | null;
+  psicologoEvaluador?: string | null;
+  cpspNumero?: string | null;
   detalleAreas: Array<{
     codigo: string;
     nombre: string;
@@ -208,6 +211,9 @@ export function mapDetailToScoringDisplay(
     p6_4Computadora: hoja.p6_4_computadora,
     p6_5PlanPrincipal: hoja.p6_5_plan_principal,
     p6_6TipoInstitucion: hoja.p6_6_tipo_institucion,
+    observacionesPsicopedagogicas: hoja.observaciones_psicopedagogicas,
+    psicologoEvaluador: hoja.psicologo_evaluador,
+    cpspNumero: hoja.cpsp_numero,
     detalleAreas: mappedAreas,
   };
 }
@@ -542,6 +548,26 @@ export function ScoringSummaryCard({ data, title }: ScoringSummaryCardProps) {
           {data.interpretacionS2 || '—'}
         </div>
       </div>
+
+      {/* Observaciones Psicopedagógicas y Sugerencias Vocacionales */}
+      {data.observacionesPsicopedagogicas && (
+        <div className="rounded-xl border border-indigo-200 bg-indigo-50/50 p-4 text-xs space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-indigo-200/60 pb-2">
+            <span className="font-bold tracking-wider text-indigo-950 uppercase">
+              Observaciones Psicopedagógicas y Sugerencias Vocacionales (Plantilla Oficial)
+            </span>
+            {data.psicologoEvaluador && (
+              <span className="text-[11px] font-semibold text-slate-600">
+                Evaluador: {data.psicologoEvaluador}
+                {data.cpspNumero ? ` · ${data.cpspNumero}` : ''}
+              </span>
+            )}
+          </div>
+          <p className="whitespace-pre-line text-slate-800 leading-relaxed font-sans">
+            {data.observacionesPsicopedagogicas}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

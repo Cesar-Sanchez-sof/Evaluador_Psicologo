@@ -249,10 +249,17 @@ export async function previewEvaluation(
   });
 }
 
+export interface EvaluationSubmissionObservations {
+  psicologoEvaluador?: string;
+  cpspNumero?: string;
+  observacionesPsicopedagogicas?: string;
+}
+
 export async function submitEvaluation(
   generalData: GeneralDataState,
   answers: StudentAnswers,
   notasOficiales: OfficialGrades,
+  observations?: EvaluationSubmissionObservations,
 ): Promise<EvaluationDetail> {
   return requestJson<EvaluationDetail>('/evaluaciones', {
     method: 'POST',
@@ -266,6 +273,9 @@ export async function submitEvaluation(
       },
       respuestas: answers,
       notasOficiales,
+      psicologoEvaluador: observations?.psicologoEvaluador?.trim() || undefined,
+      cpspNumero: observations?.cpspNumero?.trim() || undefined,
+      observacionesPsicopedagogicas: observations?.observacionesPsicopedagogicas?.trim() || undefined,
     }),
   });
 }

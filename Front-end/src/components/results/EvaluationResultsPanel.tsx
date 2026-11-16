@@ -1,9 +1,10 @@
-import { Download, RefreshCw } from 'lucide-react';
+import { CheckCircle2, Download, Loader2, NotebookPen, RefreshCw, Save } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
   buildExportUrl,
   fetchEvaluationDetail,
   fetchEvaluations,
+  savePsychologistVerdict,
 } from '../../services/api';
 import type { EvaluationDetail, EvaluationListItem } from '../../types/questionnaire';
 import { mapDetailToScoringDisplay, ScoringSummaryCard } from './ScoringSummaryCard';
@@ -20,6 +21,13 @@ export function EvaluationResultsPanel({
   const [loadingList, setLoadingList] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [editObservations, setEditObservations] = useState('');
+  const [editEvaluator, setEditEvaluator] = useState('');
+  const [editCpsp, setEditCpsp] = useState('');
+  const [savingVerdict, setSavingVerdict] = useState(false);
+  const [verdictSuccess, setVerdictSuccess] = useState<string | null>(null);
+  const [verdictError, setVerdictError] = useState<string | null>(null);
 
   const loadList = async (selectId?: number | string | null) => {
     setLoadingList(true);
@@ -43,9 +51,14 @@ export function EvaluationResultsPanel({
   const loadDetail = async (id: number | string) => {
     setLoadingDetail(true);
     setError(null);
+    setVerdictSuccess(null);
+    setVerdictError(null);
     try {
       const detail = await fetchEvaluationDetail(id);
       setSelectedDetail(detail);
+      setEditObservations(detail.hojaCorreccion.observaciones_psicopedagogicas ?? '');
+      setEditEvaluator(detail.hojaCorreccion.psicologo_evaluador ?? '');
+      setEditCpsp(detail.hojaCorreccion.cpsp_numero ?? '');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar el detalle');
     } finally {
@@ -60,6 +73,39 @@ export function EvaluationResultsPanel({
 
   const handleExport = (format: 'csv' | 'json') => {
     window.open(buildExportUrl(format), '_blank', 'noopener,noreferrer');
+  };
+
+  const handleSaveVerdict = async () => {
+    if (!selectedDetail) return;
+    const evalId = selectedDetail.hojaCorreccion.evaluacion_id;
+    const firstArea = selectedDetail.hojaCorreccion.primera_opcion_codigo;
+    if (!firstArea) {
+      setVerdictError('No se encontró el código del área vocacional recomendada.');
+      return;
+    }
+    setSavingVerdict(true);
+    setVerdictSuccess(null);
+    setVerdictError(null);
+    try {
+      const updated = await savePsychologistVerdict(evalId, {
+        evaluatorName: editEvaluator.trim() || 'Psicólogo / Evaluador',
+        cpspNumber: editCpsp.trim(),
+        evaluationDate: new Date().toISOString().slice(0, 10),
+        recommendedAreaCode: firstArea,
+        secondAreaCode: selectedDetail.hojaCorreccion.segunda_opcion_codigo ?? undefined,
+        observations: editObservations.trim(),
+      });
+      setSelectedDetail(updated);
+      setVerdictSuccess(
+        'Observaciones psicopedagógicas y veredicto guardados con éxito en PostgreSQL.',
+      );
+      const list = await fetchEvaluations();
+      setEvaluations(list);
+    } catch (err) {
+      setVerdictError(err instanceof Error ? err.message : 'Error al guardar el veredicto');
+    } finally {
+      setSavingVerdict(false);
+    }
   };
 
   const hoja = selectedDetail?.hojaCorreccion;
@@ -191,10 +237,100 @@ export function EvaluationResultsPanel({
             </div>
           </div>
 
-          <div className="p-6">
+          <div className="space-y-6 p-6">
             <ScoringSummaryCard
               data={mapDetailToScoringDisplay(hoja, selectedDetail.detalleAreas)}
             />
+
+            {/* Editor de Veredicto y Observaciones Psicopedagógicas */}
+            <div className="rounded-2xl border border-indigo-200/90 bg-slate-50/70 p-5 shadow-xs space-y-4">
+              <div className="flex items-center gap-2.5 border-b border-slate-200/80 pb-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-900/10 text-indigo-900">
+                  <NotebookPen className="h-4 w-4" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900">
+                    Dictamen y Observaciones Psicopedagógicas (Veredicto Oficial)
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    Actualiza o registra las observaciones cualitativas para esta evaluación en PostgreSQL
+                  </p>
+                </div>
+              </div>
+
+              {verdictSuccess && (
+                <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-semibold text-emerald-800">
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                  <span>{verdictSuccess}</span>
+                </div>
+              )}
+
+              {verdictError && (
+                <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-medium text-rose-800">
+                  {verdictError}
+                </div>
+              )}
+
+              <div>
+                <label
+                  htmlFor="result-observations"
+                  className="block text-xs font-bold tracking-wider text-slate-700 uppercase"
+                >
+                  Observaciones Psicopedagógicas y Recomendaciones Vocacionales:
+                </label>
+                <textarea
+                  id="result-observations"
+                  rows={4}
+                  value={editObservations}
+                  onChange={(e) => setEditObservations(e.target.value)}
+                  placeholder="Escribe las observaciones del caso, alertas socioemocionales o sugerencias de carreras..."
+                  className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white p-3 text-xs leading-relaxed text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:outline-hidden"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 pt-2 border-t border-slate-200/80">
+                <div>
+                  <label className="block text-xs font-medium text-slate-700">
+                    Psicólogo / Evaluador Responsable
+                  </label>
+                  <input
+                    type="text"
+                    value={editEvaluator}
+                    onChange={(e) => setEditEvaluator(e.target.value)}
+                    placeholder="Ej. Lic. César Sánchez"
+                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:outline-hidden"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-700">
+                    N.° Colegiatura CPSP
+                  </label>
+                  <input
+                    type="text"
+                    value={editCpsp}
+                    onChange={(e) => setEditCpsp(e.target.value)}
+                    placeholder="Ej. CPSP 25890"
+                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => void handleSaveVerdict()}
+                  disabled={savingVerdict}
+                  className="inline-flex items-center gap-2 rounded-xl bg-indigo-900 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-indigo-800 disabled:opacity-50"
+                >
+                  {savingVerdict ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Save className="h-3.5 w-3.5" />
+                  )}
+                  {savingVerdict ? 'Guardando...' : 'Guardar Observaciones y Veredicto'}
+                </button>
+              </div>
+            </div>
           </div>
         </section>
       )}

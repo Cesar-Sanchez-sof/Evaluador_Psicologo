@@ -135,7 +135,6 @@ CREATE TABLE IF NOT EXISTS notas_oficiales (
     nota_ingles DECIMAL(5,2),
     nota_educacion_trabajo DECIMAL(5,2),
     nota_educacion_religiosa DECIMAL(5,2),
-    nota_castellano_segunda_lengua DECIMAL(5,2),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

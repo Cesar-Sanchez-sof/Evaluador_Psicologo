@@ -56,7 +56,7 @@ export function GradesForm({ values, onChange }: GradesFormProps) {
         <div>
           <h3 className="text-base font-bold text-slate-900">NOTAS ACADÉMICAS</h3>
           <p className="text-xs text-slate-500">
-            Registro oficial de calificaciones · 11 cursos · Periodos T1 y T2
+            Registro oficial de calificaciones · {GRADE_COURSES.length} cursos · Periodos T1 y T2
           </p>
         </div>
       </div>

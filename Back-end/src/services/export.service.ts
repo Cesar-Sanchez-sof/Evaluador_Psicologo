@@ -6,7 +6,7 @@ import { query } from '../config/database.js';
  * Genera una fila "plana" por estudiante (última evaluación evaluada/revisada),
  * lista para `pandas.read_csv()`:
  *   - Datos generales
- *   - Notas académicas oficiales (11 cursos)
+ *   - Notas académicas oficiales (10 cursos)
  *   - Respuestas crudas P1.1 .. P6.6 (las de opción múltiple se unen por comas)
  *   - Puntajes consolidados por sección + perfil psicométrico
  *   - Puntaje total de cada una de las 10 áreas vocacionales
@@ -42,7 +42,6 @@ const OFFICIAL_GRADE_COLUMNS = [
   'nota_educacion_fisica',
   'nota_comunicacion',
   'nota_arte_cultura',
-  'nota_castellano_segunda_lengua',
   'nota_ingles',
   'nota_matematica',
   'nota_ciencia_tecnologia',
