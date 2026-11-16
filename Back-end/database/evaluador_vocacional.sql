@@ -349,8 +349,8 @@ INSERT INTO preguntas (id, seccion_id, codigo, subgrupo_codigo, subgrupo_nombre,
 
 -- Preguntas Sección 5 (P5.1 - P5.4)
 INSERT INTO preguntas (id, seccion_id, codigo, subgrupo_codigo, subgrupo_nombre, enunciado, tipo_respuesta, es_puntuable, es_indicador_apoyo, orden) VALUES
-(44, 5, 'P5.1', NULL, NULL, '¿Cuál de las siguientes actividades disfrutas más en tu tiempo libre?', 'opcion_unica', TRUE, FALSE, 44),
-(45, 5, 'P5.2', NULL, NULL, '¿Cuál de estos temas te llama más la atención para curiosear, leer o aprender por tu cuenta en tu tiempo libre?', 'opcion_unica', TRUE, FALSE, 45),
+(44, 5, 'P5.1', NULL, NULL, '¿Cuál de las siguientes actividades disfrutas más en tu tiempo libre?', 'opcion_multiple', TRUE, FALSE, 44),
+(45, 5, 'P5.2', NULL, NULL, '¿Cuál de estos temas te llama más la atención para curiosear, leer o aprender por tu cuenta en tu tiempo libre?', 'opcion_multiple', TRUE, FALSE, 45),
 (46, 5, 'P5.3', NULL, NULL, 'Si en el colegio te dieran libertad total para realizar un proyecto grupal de fin de año, ¿cuál preferirías hacer?', 'opcion_unica', TRUE, FALSE, 46),
 (47, 5, 'P5.4', NULL, NULL, '¿Cuántas horas a la semana dedicas aproximadamente a actividades extracurriculares? (deportes, academias, talleres, hobbies)', 'opcion_unica', FALSE, TRUE, 47);
 

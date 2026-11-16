@@ -227,3 +227,85 @@ test('Caso 3 (Bonus S6): P6.6="d" Escuela militar/policial otorga +2 al Área 09
   assert.equal(byArea['02'].bonusS6, 0);
   assert.equal(result.primeraOpcionCodigo, '09');
 });
+
+test('Caso 4 (Respuestas múltiples en P5.1 y P5.2): acumula +3 puntos por cada opción en las áreas correspondientes', () => {
+  const parsed = answersSchema.parse({
+    'P1.1': ['g'],
+    'P1.2': ['k'],
+    'P1.3': 1,
+    'P1.4': 1,
+    'P1.5': 1,
+    'P1.6': 1,
+    'P1.7': 3,
+    'P2.1': 3,
+    'P2.2': 3,
+    'P2.3': 3,
+    'P2.4': 3,
+    'P2.5': 3,
+    'P2.6': 3,
+    'P2.7': 3,
+    'P2.8': 3,
+    'P2.9': 3,
+    'P3.1': 1,
+    'P3.2': 1,
+    'P3.3': 1,
+    'P3.4': 1,
+    'P3.5': 1,
+    'P3.6': 1,
+    'P3.7': 1,
+    'P3.8': 1,
+    'P3.9': 1,
+    'P4.1': 1,
+    'P4.2': 1,
+    'P4.3': 1,
+    'P4.4': 1,
+    'P4.5': 1,
+    'P4.6': 1,
+    'P4.7': 1,
+    'P4.8': 1,
+    'P4.9': 1,
+    'P4.10': 1,
+    'P4.11': 1,
+    'P4.12': 1,
+    'P4.13': 1,
+    'P4.14': 1,
+    'P4.15': 1,
+    'P4.16': 1,
+    'P4.17': 1,
+    'P4.18': 1,
+    // P5.1 múltiples: 'a' -> 02,08,09,10 (+3) y 'b' -> 01,02,03 (+3). Área 02 recibe +6.
+    'P5.1': ['a', 'b'],
+    // P5.2 múltiples: 'c' -> 06 (+3) y 'e' -> 05,06 (+3). Área 06 recibe +6, Área 05 recibe +3.
+    'P5.2': ['c', 'e'],
+    // P5.3 única: 'd' -> 04,07 (+3)
+    'P5.3': 'd',
+    'P5.4': 'b',
+    'P6.1': 'a',
+    'P6.2': 'a',
+    'P6.3': 'a',
+    'P6.4': 'a',
+    'P6.5': 'a',
+    'P6.6': 'a',
+  });
+
+  const result = evaluateQuestionnaire(parsed);
+  const byArea = Object.fromEntries(result.detalleAreas.map((r) => [r.areaCodigo, r]));
+
+  // Área 02: P5.1 'a' (+3) + P5.1 'b' (+3) = +6 en S5
+  assert.equal(byArea['02'].ptosS5, 6);
+  // Área 06: P5.2 'c' (+3) + P5.2 'e' (+3) = +6 en S5
+  assert.equal(byArea['06'].ptosS5, 6);
+  // Área 05: P5.2 'e' (+3) = +3 en S5
+  assert.equal(byArea['05'].ptosS5, 3);
+  // Área 04: P5.3 'd' (+3) = +3 en S5
+  assert.equal(byArea['04'].ptosS5, 3);
+  // Área 01: P5.1 'b' (+3) = +3 en S5
+  assert.equal(byArea['01'].ptosS5, 3);
+  // Área 08: P5.1 'a' (+3) = +3 en S5
+  assert.equal(byArea['08'].ptosS5, 3);
+
+  // Verificación de formateo en seccion5Detalle
+  assert.equal(result.seccion5Detalle.p5_1, 'a, b');
+  assert.equal(result.seccion5Detalle.p5_2, 'c, e');
+  assert.equal(result.seccion5Detalle.p5_3, 'd');
+});

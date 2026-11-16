@@ -57,8 +57,8 @@ export interface ScoringDisplayModel {
     c: number;
   };
   seccion5Detalle?: {
-    p5_1: string;
-    p5_2: string;
+    p5_1: string | string[];
+    p5_2: string | string[];
     p5_3: string;
   };
   bonusS6Area09: number;
@@ -435,9 +435,24 @@ export function ScoringSummaryCard({ data, title }: ScoringSummaryCardProps) {
             <div className="mt-2 space-y-1 text-slate-700">
               {data.seccion5Detalle ? (
                 <p>
-                  S5 (+3 pts c/u): P5.1 <strong>{data.seccion5Detalle.p5_1.toUpperCase()}</strong> ·
-                  P5.2 <strong>{data.seccion5Detalle.p5_2.toUpperCase()}</strong> · P5.3{' '}
-                  <strong>{data.seccion5Detalle.p5_3.toUpperCase()}</strong>
+                  S5 (+3 pts c/u): P5.1{' '}
+                  <strong>
+                    {Array.isArray(data.seccion5Detalle.p5_1)
+                      ? data.seccion5Detalle.p5_1.join(', ').toUpperCase()
+                      : data.seccion5Detalle.p5_1.toUpperCase()}
+                  </strong>{' '}
+                  · P5.2{' '}
+                  <strong>
+                    {Array.isArray(data.seccion5Detalle.p5_2)
+                      ? data.seccion5Detalle.p5_2.join(', ').toUpperCase()
+                      : data.seccion5Detalle.p5_2.toUpperCase()}
+                  </strong>{' '}
+                  · P5.3{' '}
+                  <strong>
+                    {Array.isArray(data.seccion5Detalle.p5_3)
+                      ? (data.seccion5Detalle.p5_3 as string[]).join(', ').toUpperCase()
+                      : data.seccion5Detalle.p5_3.toUpperCase()}
+                  </strong>
                 </p>
               ) : (
                 <p>S5 (+3 pts c/u): acumulado en columna Ptos. S5.</p>

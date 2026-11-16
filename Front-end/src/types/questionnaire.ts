@@ -292,8 +292,8 @@ export interface EvaluationScoringPreview {
     cConvencional: number;
   };
   seccion5Detalle?: {
-    p5_1: string;
-    p5_2: string;
+    p5_1: string | string[];
+    p5_2: string | string[];
     p5_3: string;
   };
   seccion6Detalle?: {
