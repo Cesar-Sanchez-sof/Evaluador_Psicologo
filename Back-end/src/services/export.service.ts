@@ -172,11 +172,13 @@ function buildExportRow(
     toLikert(answers, 'P1.6');
   const ptosS3 = sumLikert(answers, S3_CODES);
   const ptosS4 = sumLikert(answers, S4_CODES);
-  // Cada hobby puntuable vale +3 y las tres preguntas son obligatorias.
-  const ptosS5 = ['P5.1', 'P5.2', 'P5.3'].reduce(
-    (acc, code) => acc + (answers[code] ? 3 : 0),
-    0,
-  );
+  // Cada hobby puntuable vale +3 por cada opción seleccionada (P5.1 y P5.2 múltiples, P5.3 única).
+  const optionsP51 = toOptionList(answers, 'P5.1');
+  const optionsP52 = toOptionList(answers, 'P5.2');
+  const ptosS5 =
+    optionsP51.length * 3 +
+    optionsP52.length * 3 +
+    (answers['P5.3'] ? 3 : 0);
   const bonusS6 = answers['P6.6'] === 'd' ? 2 : 0;
 
   const row: ExportRow = {

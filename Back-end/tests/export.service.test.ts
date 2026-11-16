@@ -21,6 +21,11 @@ test('buildCsv conserva las respuestas múltiples separadas por comas dentro de 
   assert.equal(csv, 'P1.1\r\n"a,b,k"\r\n');
 });
 
+test('buildCsv conserva las respuestas múltiples de P5.1 y P5.2 separadas por comas dentro de la celda', () => {
+  const csv = buildCsv([{ 'P5.1': 'a,b', 'P5.2': 'c,e' }], ['P5.1', 'P5.2']);
+  assert.equal(csv, 'P5.1,P5.2\r\n"a,b","c,e"\r\n');
+});
+
 test('buildExportColumns incluye las 10 notas oficiales después de los datos generales', () => {
   const columns = buildExportColumns(['P1.1']);
   const gradeColumns = [

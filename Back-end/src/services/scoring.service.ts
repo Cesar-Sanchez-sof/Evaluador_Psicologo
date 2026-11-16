@@ -239,9 +239,25 @@ export function evaluateQuestionnaire(answers: ValidatedAnswers): EvaluationScor
   addPoints(s4, ['05', '06'], eEmprendedor);
   addPoints(s4, ['05', '07', '09'], cConvencional);
 
-  // Paso 6 — Sección 5: Intereses y Hobbies (+3 puntos en P5.1, P5.2, P5.3)
-  addPoints(s5, S5_HOBBY_MAP['P5.1'][answers['P5.1']] ?? [], 3);
-  addPoints(s5, S5_HOBBY_MAP['P5.2'][answers['P5.2']] ?? [], 3);
+  // Paso 6 — Sección 5: Intereses y Hobbies (+3 puntos por cada opción en P5.1, P5.2, y +3 en P5.3)
+  const p51List = Array.isArray(answers['P5.1'])
+    ? answers['P5.1']
+    : answers['P5.1']
+      ? [answers['P5.1']]
+      : [];
+  for (const opt of p51List) {
+    addPoints(s5, S5_HOBBY_MAP['P5.1'][opt] ?? [], 3);
+  }
+
+  const p52List = Array.isArray(answers['P5.2'])
+    ? answers['P5.2']
+    : answers['P5.2']
+      ? [answers['P5.2']]
+      : [];
+  for (const opt of p52List) {
+    addPoints(s5, S5_HOBBY_MAP['P5.2'][opt] ?? [], 3);
+  }
+
   addPoints(s5, S5_HOBBY_MAP['P5.3'][answers['P5.3']] ?? [], 3);
 
   // Paso 7 — Sección 6: Excepción P6.6 = 'd' (+2 puntos al Área 09)
@@ -348,8 +364,8 @@ export function evaluateQuestionnaire(answers: ValidatedAnswers): EvaluationScor
       cConvencional,
     },
     seccion5Detalle: {
-      p5_1: answers['P5.1'],
-      p5_2: answers['P5.2'],
+      p5_1: Array.isArray(answers['P5.1']) ? answers['P5.1'].join(', ') : String(answers['P5.1'] ?? ''),
+      p5_2: Array.isArray(answers['P5.2']) ? answers['P5.2'].join(', ') : String(answers['P5.2'] ?? ''),
       p5_3: answers['P5.3'],
     },
     seccion6Detalle: {

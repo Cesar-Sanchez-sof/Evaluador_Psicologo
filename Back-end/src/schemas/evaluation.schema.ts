@@ -35,6 +35,14 @@ const multipleAreaCurricularSchema = z
   ])
   .transform((arr) => [...new Set(arr)]);
 
+/** P5.1 y P5.2 aceptan una o varias opciones (`string[]` o `string` normalizado a array único). */
+const multipleSixOptionsSchema = z
+  .union([
+    z.array(z.enum(SIX_OPTIONS)).min(1, 'Debes seleccionar al menos una opción'),
+    z.enum(SIX_OPTIONS).transform((val) => [val]),
+  ])
+  .transform((arr) => [...new Set(arr)]);
+
 export const answersSchema = z
   .object({
     'P1.1': multipleAreaCurricularSchema,
@@ -84,8 +92,8 @@ export const answersSchema = z
     'P4.17': likertSchema,
     'P4.18': likertSchema,
 
-    'P5.1': z.enum(SIX_OPTIONS),
-    'P5.2': z.enum(SIX_OPTIONS),
+    'P5.1': multipleSixOptionsSchema,
+    'P5.2': multipleSixOptionsSchema,
     'P5.3': z.enum(SIX_OPTIONS),
     'P5.4': z.enum(FOUR_OPTIONS),
 

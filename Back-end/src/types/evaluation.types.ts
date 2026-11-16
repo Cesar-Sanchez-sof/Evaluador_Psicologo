@@ -17,8 +17,8 @@ export interface StudentInput {
 
 /**
  * Mapa de respuestas del estudiante por código de pregunta (`P1.1` .. `P6.6`).
- * - `P1.1` y `P1.2` aceptan un arreglo de opciones (`string[]`, ej. `['d', 'k']`) o string único.
- * - `P5.1`..`P5.4`, `P6.1`..`P6.6` aceptan código de opción (`'a'`, `'b'`, ...).
+ * - `P1.1`, `P1.2`, `P5.1` y `P5.2` aceptan un arreglo de opciones (`string[]`, ej. `['a', 'b']`) o string único.
+ * - `P5.3`..`P5.4`, `P6.1`..`P6.6` aceptan código de opción (`'a'`, `'b'`, ...).
  * - Ítems Likert (`P1.3`..`P1.7`, `P2.1`..`P2.9`, `P3.1`..`P3.9`, `P4.1`..`P4.18`) aceptan 1..5.
  */
 export type QuestionnaireAnswersMap = Record<string, string | string[] | LikertValue>;
