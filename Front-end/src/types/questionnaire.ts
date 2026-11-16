@@ -83,6 +83,7 @@ export interface QuestionnaireStructure {
   likertScale: LikertScaleItem[];
   ageOptions: string[];
   sexOptions: string[];
+  sectionOptions?: string[];
   sections: QuestionnaireSection[];
   vocationalAreas: VocationalAreaOption[];
 }

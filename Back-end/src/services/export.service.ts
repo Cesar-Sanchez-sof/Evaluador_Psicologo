@@ -320,13 +320,32 @@ export interface GradesReportRow {
 }
 
 export async function getSectionsList(): Promise<string[]> {
-  const res = await query<{ seccion: string }>(
-    `SELECT DISTINCT seccion
-     FROM estudiantes
-     WHERE seccion IS NOT NULL AND TRIM(seccion) <> ''
-     ORDER BY seccion ASC`,
-  );
-  return res.rows.map((r) => r.seccion);
+  try {
+    const res = await query<{ seccion: string }>(
+      `SELECT DISTINCT seccion
+       FROM (
+         SELECT codigo AS seccion FROM secciones_academicas WHERE activo = TRUE
+         UNION
+         SELECT seccion FROM estudiantes WHERE seccion IS NOT NULL AND TRIM(seccion) <> ''
+       ) s
+       ORDER BY seccion ASC`,
+    );
+    if (res.rows.length > 0) {
+      return res.rows.map((r) => r.seccion);
+    }
+  } catch {
+    const fallbackRes = await query<{ seccion: string }>(
+      `SELECT DISTINCT seccion
+       FROM estudiantes
+       WHERE seccion IS NOT NULL AND TRIM(seccion) <> ''
+       ORDER BY seccion ASC`,
+    ).catch(() => ({ rows: [] as Array<{ seccion: string }> }));
+
+    if (fallbackRes.rows.length > 0) {
+      return fallbackRes.rows.map((r) => r.seccion);
+    }
+  }
+  return ['A', 'B', 'C', 'D', 'E', 'F'];
 }
 
 export async function getGradesReportData(

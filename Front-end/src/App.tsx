@@ -488,6 +488,7 @@ export function App() {
                       data={generalData}
                       ageOptions={structure.ageOptions}
                       sexOptions={structure.sexOptions}
+                      sectionOptions={structure.sectionOptions}
                       onChange={handleGeneralDataChange}
                     />
                   </div>
@@ -564,6 +565,7 @@ export function App() {
                       data={generalData}
                       ageOptions={structure.ageOptions}
                       sexOptions={structure.sexOptions}
+                      sectionOptions={structure.sectionOptions}
                       onChange={handleGeneralDataChange}
                     />
                     <GradesForm values={grades} onChange={handleGradesChange} />

@@ -1,10 +1,13 @@
-import { UserRound } from 'lucide-react';
+import { ChevronDown, UserRound } from 'lucide-react';
 import type { GeneralDataState } from '../../types/questionnaire';
+
+const DEFAULT_SECTIONS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
 interface GeneralDataFormProps {
   data: GeneralDataState;
   ageOptions: string[];
   sexOptions: string[];
+  sectionOptions?: string[];
   onChange: (updated: GeneralDataState) => void;
 }
 
@@ -12,8 +15,10 @@ export function GeneralDataForm({
   data,
   ageOptions,
   sexOptions,
+  sectionOptions = DEFAULT_SECTIONS,
   onChange,
 }: GeneralDataFormProps) {
+  const availableSections = sectionOptions.length > 0 ? sectionOptions : DEFAULT_SECTIONS;
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs">
       <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50/80 px-6 py-4">
@@ -106,14 +111,35 @@ export function GeneralDataForm({
             <label htmlFor="student-section" className="block text-sm font-semibold text-slate-800">
               d. Sección (5.° de secundaria — Sección):
             </label>
-            <input
-              id="student-section"
-              type="text"
-              value={data.sectionName}
-              onChange={(e) => onChange({ ...data, sectionName: e.target.value })}
-              placeholder='Ej. "A", "B", "C"...'
-              className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:bg-white focus:ring-2 focus:ring-blue-600/15 focus:outline-none"
-            />
+            <div className="relative mt-2">
+              <select
+                id="student-section"
+                value={data.sectionName}
+                onChange={(e) => onChange({ ...data, sectionName: e.target.value })}
+                className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 pr-10 text-sm font-medium text-slate-900 focus:border-blue-600 focus:bg-white focus:ring-2 focus:ring-blue-600/15 focus:outline-none"
+              >
+                <option value="" disabled>
+                  -- Selecciona tu sección (A, B, C, D, E o F) --
+                </option>
+                {availableSections.map((sec) => (
+                  <option key={sec} value={sec}>
+                    Sección {sec.toUpperCase()}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-500">
+                <ChevronDown className="h-4 w-4" />
+              </div>
+            </div>
+            {data.sectionName ? (
+              <p className="mt-1.5 text-xs font-semibold text-blue-800">
+                ✓ Seleccionado: 5.° de secundaria — Sección "{data.sectionName.toUpperCase()}"
+              </p>
+            ) : (
+              <p className="mt-1.5 text-xs text-slate-500">
+                Selecciona la sección correspondiente entre las opciones de la A a la F.
+              </p>
+            )}
           </div>
         </div>
       </div>
