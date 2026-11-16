@@ -310,9 +310,40 @@ export async function savePsychologistVerdict(
 export type ExportFormat = 'csv' | 'json';
 
 /**
- * URL directa de descarga del dataset (Back-end /api/export/:format).
- * Se usa con `window.open` para que el navegador gestione la descarga.
+ * Obtiene la lista de secciones únicas de estudiantes registradas en PostgreSQL.
  */
-export function buildExportUrl(format: ExportFormat): string {
-  return `${API_BASE_URL}/export/${format}`;
+export async function fetchSections(): Promise<string[]> {
+  try {
+    const res = await requestJson<string[]>('/export/secciones');
+    return Array.isArray(res) ? res : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * URL de descarga del reporte consolidado de notas oficiales (escala 0-20)
+ * filtrado por sección ('todas' o sección específica) en formato Excel (.xlsx) o CSV.
+ */
+export function buildGradesExportUrl(seccion?: string, format: 'xlsx' | 'csv' = 'xlsx'): string {
+  const params = new URLSearchParams();
+  if (seccion && seccion.trim().toLowerCase() !== 'todas') {
+    params.set('seccion', seccion.trim());
+  }
+  params.set('format', format);
+  const query = params.toString();
+  return `${API_BASE_URL}/export/notas${query ? `?${query}` : ''}`;
+}
+
+/**
+ * URL directa de descarga del dataset ML (Back-end /api/export/:format).
+ * Admite filtro opcional por sección.
+ */
+export function buildExportUrl(format: ExportFormat, seccion?: string): string {
+  const params = new URLSearchParams();
+  if (seccion && seccion.trim().toLowerCase() !== 'todas') {
+    params.set('seccion', seccion.trim());
+  }
+  const query = params.toString();
+  return `${API_BASE_URL}/export/${format}${query ? `?${query}` : ''}`;
 }
